@@ -1,6 +1,6 @@
 export type AnalysisType = 'scam' | 'news' | 'url' | 'screenshot';
 
-export type RiskLevel = 'LOW CONCERN' | 'NEEDS VERIFICATION' | 'SUSPICIOUS' | 'HIGH RISK INDICATORS';
+export type RiskLevel = 'LOW CONCERN' | 'NEEDS VERIFICATION' | 'SUSPICIOUS' | 'HIGH RISK INDICATORS' | 'Low Concern' | 'Needs Verification' | 'Suspicious' | 'High Risk Indicators';
 
 export type SignalSeverity = 'low' | 'medium' | 'high';
 
@@ -14,10 +14,12 @@ export interface AnalysisResult {
   id: string;
   type: AnalysisType;
   score: number; // 0 - 100
+  trust_score?: number;
   risk_level: RiskLevel;
   verdict: string;
   signals: SignalItem[];
   summary: string;
+  explanation?: string;
   recommendation: string;
   created_at: string;
   is_mock?: boolean;

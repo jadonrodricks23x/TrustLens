@@ -2,164 +2,114 @@
 
 > **Look closer. Trust smarter.**
 
-TrustLens AI is an explainable AI-powered digital safety platform that helps users analyze suspicious messages, viral news claims, deceptive URLs, and screenshots. 
+TrustLens AI is an explainable, Google Gemini-powered digital safety platform that helps users analyze potentially suspicious scam messages, viral news claims, deceptive URLs, and screenshots.
 
-Unlike conventional security tools that return opaque verdicts like "SAFE" or "MALICIOUS", TrustLens AI is built on one foundational principle:
+Instead of providing opaque, binary verdicts like "safe" or "fake", TrustLens operates on a foundational principle:
 > **"Don't just give a verdict. Explain the signals."**
 
-Every assessment breaks down detected signals, provides a calibrated **TrustLens Score (0–100)**, details why the signals matter, and suggests practical, safe next steps without ever claiming infallible certainty.
+Every assessment deconstructs content into clear threat signals, delivers a calibrated **TrustLens Score (0–100)**, details why the signals matter, and outlines actionable safety steps without claiming absolute certainty.
 
 ---
 
-## 🌟 Key Features
+## 🌟 Core Features
 
 1. **🚨 Scam Detector**
-   - Analyzes SMS, WhatsApp messages, phishing emails, fake job offers, and payment requests.
-   - Detects local urgency tactics, OTP/password solicitation, fake rewards, and coercive suspension threats.
+   - Analyzes SMS, WhatsApp messages, phishing emails, job offers, and payment requests.
+   - Detects local urgency tactics, OTP/password solicitation, impersonation, unrealistic rewards, and coercive threats.
 2. **📰 News & Claim Verifier**
-   - Assesses viral headlines, unverified health claims, and social media posts.
-   - Identifies sensationalist framing, absolute medical claims, clickbait constructs, and missing citations.
+   - Analyzes viral headlines, unverified health claims, and social media claims.
+   - Identifies sensationalist wording, absolute claims, missing context, clickbait framing, and unverified attribution.
 3. **🔗 Link & URL Safety Checker**
-   - Safely inspects URLs without risky server crawls.
-   - Detects raw IP hosts, non-standard ports, redirection shorteners, spoofed subdomains, and credential-harvesting paths. Includes an external link caution modal.
-4. **📸 Screenshot OCR Analyzer**
-   - Supports PNG, JPG, JPEG, and WEBP uploads (up to 5MB).
-   - In-memory OCR extraction analyzes extracted text without permanent disk retention.
-5. **🧠 Zero-Token Educational Hub & Quiz**
+   - Deterministic structural checks before AI: unencrypted HTTP, direct IP hostnames, redirection shorteners, unusual ports, nested subdomains, and credential-harvesting paths.
+   - Includes a security caution prompt before visiting external destinations.
+4. **📸 Screenshot Analyzer (Upload & Camera Options)**
+   - **Option 1: Upload Image** — Select an existing PNG, JPG, JPEG, or WEBP screenshot from your device (up to 5 MB).
+   - **Option 2: Take Picture** — Snap a photo directly through your mobile or computer camera using browser MediaStream APIs with preferred rear-camera support (`facingMode: "environment"`).
+   - Includes preview, retake, remove/replace options, in-memory OCR text extraction, and Gemini multimodal image analysis.
+5. **🧠 Zero-Token Educational Hub & Spot the Scam Quiz**
    - 7 concise threat breakdown guides (Phishing, Social Engineering, Clickbait, Fake Offers, Impersonation, Misinformation vs. Disinformation, Suspicious URLs).
-   - **"Can You Spot the Scam?"** interactive 5-question test running 100% locally from static data (0 AI tokens consumed).
+   - **"Can You Spot the Scam?"** interactive 5-question test running 100% locally from static data (0 API tokens consumed).
 6. **💾 Private Local History**
-   - LocalStorage-based history saving compact results without persisting sensitive raw messages or images.
-7. **🌗 Modern Accessible Design**
-   - Dark mode by default with light mode toggle.
-   - Fluid responsiveness across mobile (320px, 375px, 430px) and desktop (1024px, 1440px).
+   - Browser LocalStorage-based history saving compact assessment summaries without persisting raw sensitive messages or screenshot images (ready for optional Supabase sync).
+7. **🌗 Modern Cybersecurity SaaS Aesthetic**
+   - Dark mode by default with light mode toggle, glassmorphism cards, responsive navigation drawer, and fluid mobile-to-desktop adaptation.
 
 ---
 
-## 🔬 Calibrated Score System
+## 🔬 Calibrated TrustLens Score System
 
-| Score Range | Risk Level | Meaning |
+| Score Range | Risk Level | Description |
 | :--- | :--- | :--- |
-| **0 – 30** | 🟢 **LOW CONCERN** | Standard expected communication patterns. |
-| **31 – 60** | 🟡 **NEEDS VERIFICATION** | Ambiguities, atypical structure, or missing source attribution. |
-| **61 – 80** | 🟠 **SUSPICIOUS** | Multiple deceptive patterns, masking, or pressure tactics detected. |
-| **81 – 100** | 🔴 **HIGH RISK INDICATORS** | Direct requests for credentials, OTPs, advance payments, or severe coercion. |
+| **0 – 30** | 🟢 **Low Concern** | Standard expected communication patterns with no obvious red flags. |
+| **31 – 60** | 🟡 **Needs Verification** | Atypical wording, missing context, unverified attribution, or minor anomalies. |
+| **61 – 80** | 🟠 **Suspicious** | Multiple warning signals, deceptive patterns, masked links, or pressure. |
+| **81 – 100** | 🔴 **High Risk Indicators** | Direct credential/OTP demands, advance fees, wire transfer coercion, or severe threats. |
 
 ---
 
-## 🏗️ Architecture & Token Optimization Pipeline
+## 🛠️ Tech Stack
+
+- **Frontend:** React, Vite, TypeScript, Tailwind CSS, Framer Motion, Lucide React
+- **Backend:** Python 3.9+, FastAPI, Uvicorn, Pillow, Python-Multipart, Httpx
+- **AI Intelligence:** Google Gemini API via official `google-genai` Python SDK
+- **Database/Persistence:** LocalStorage (browser fallback) / Supabase (optional)
+
+---
+
+## 🏗️ Architecture & Data Pipeline
 
 ```text
-User Input (Text / URL / Screenshot)
+User Input (Text / URL / Image)
               ↓
     Input & File Validation
               ↓
-  Deterministic Local Signal Detection (Urgency, OTP, IP, Punctuation, etc.)
+  Deterministic Local Heuristics (Urgency, OTP, IP Host, Shorteners, Punctuation)
               ↓
-  AI Analysis (Exactly ONE Single Token-Optimized JSON Request)
+  In-Memory OCR Extraction (for screenshots)
               ↓
-  JSON Schema Validation & Fallback Handling
+  Google Gemini API (Single Token-Optimized Structured JSON Request)
               ↓
-  TrustLens Reusable Result Card (Score, Signals, Why It Matters, What To Do)
+  Structured Response Parsing & Risk Band Normalization
+              ↓
+  TrustLens Assessment Card (Score, Signals, Why It Matters, Recommendations)
 ```
 
-- **Token Optimization:** Local heuristics run first. Only relevant content snippets and detected pattern tags are sent to the AI in **exactly one request** per analysis. No previous chat history or UI layout data is transmitted.
-- **Graceful Fallback:** If an OpenAI API key is not configured, or if the network request fails, TrustLens automatically activates its deterministic pattern engine (`is_mock: true` / `local_signals_only: true`).
-
----
-
-## 📂 Project Structure
-
-```text
-TrustLens-AI/
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── Navbar.tsx          # Brand, theme toggle, mobile drawer
-│   │   │   ├── Footer.tsx          # Disclaimer and navigation
-│   │   │   ├── AnalyzerTabs.tsx    # Mode selector tabs
-│   │   │   ├── ResultCard.tsx      # Reusable assessment card with Copy & Save
-│   │   │   ├── SignalCard.tsx      # Individual explainable signal cards
-│   │   │   ├── ScoreDisplay.tsx    # Gauge meter & risk badges
-│   │   │   ├── LoadingState.tsx    # 3-stage animated scanner
-│   │   │   └── ErrorState.tsx      # Graceful error & retry UI
-│   │   ├── pages/
-│   │   │   ├── Home.tsx            # Hero, feature grid, Why TrustLens
-│   │   │   ├── Analyze.tsx         # Unified analyzer interface
-│   │   │   ├── History.tsx         # Local history viewer & manager
-│   │   │   ├── Learn.tsx           # Guides & Spot the Scam quiz
-│   │   │   └── About.tsx           # Architecture & limitations
-│   │   ├── services/
-│   │   │   ├── api.ts              # Centralized backend HTTP client
-│   │   │   └── storage.ts          # LocalStorage manager
-│   │   ├── utils/
-│   │   │   ├── scamSignals.ts      # Fast client-side hint detector
-│   │   │   ├── newsSignals.ts      # Client-side news patterns
-│   │   │   ├── urlSignals.ts       # Client-side URL patterns
-│   │   │   └── validation.ts       # Format and length checks
-│   │   ├── types/
-│   │   │   └── analysis.ts         # TypeScript interfaces
-│   │   ├── App.tsx                 # Routing & theme provider
-│   │   └── index.css               # Tailwind & glassmorphism utilities
-│   ├── package.json
-│   ├── vite.config.ts
-│   └── tailwind.config.js
-│
-├── backend/
-│   ├── routes/
-│   │   ├── scam.py                 # POST /api/analyze/scam
-│   │   ├── news.py                 # POST /api/analyze/news
-│   │   ├── url.py                  # POST /api/analyze/url
-│   │   └── screenshot.py           # POST /api/analyze/screenshot
-│   ├── services/
-│   │   ├── ai_service.py           # OpenAI-compatible client
-│   │   ├── mock_service.py         # Calibrated deterministic fallback engine
-│   │   └── ocr_service.py          # In-memory image processing
-│   ├── models/
-│   │   └── schemas.py              # Pydantic schemas
-│   ├── utils/
-│   │   ├── scam_analyzer.py        # Local message heuristics
-│   │   ├── news_analyzer.py        # Local headline heuristics
-│   │   ├── url_analyzer.py         # Local URL structure heuristics
-│   │   └── rate_limiter.py         # Sliding window rate limiter
-│   ├── main.py                     # FastAPI app & CORS middleware
-│   ├── requirements.txt
-│   └── test_all_endpoints.py       # Automated test suite
-│
-├── README.md
-├── .gitignore
-└── .env.example
-```
+- **Token Optimization:** Local heuristics run first. Only essential text snippets and detected pattern tags are sent to Gemini in **at most one call** per analysis.
+- **Mock Development Mode:** If `GEMINI_API_KEY` is not configured, TrustLens runs seamlessly in local development mode using its calibrated deterministic pattern engine (`is_mock: true`).
 
 ---
 
 ## ⚙️ Environment Variables
 
-Copy `.env.example` to `backend/.env` (or project root):
+Copy `.env.example` to `backend/.env`:
 
 ```bash
 cp .env.example backend/.env
 ```
 
-| Variable | Description | Default |
-| :--- | :--- | :--- |
-| `OPENAI_API_KEY` | OpenAI API key. Leave blank to run in deterministic smart mock mode. | *(empty)* |
-| `OPENAI_MODEL` | Target language model for assessment. | `gpt-4o-mini` |
-| `OPENAI_BASE_URL`| Custom OpenAI-compatible endpoint. | `https://api.openai.com/v1` |
-| `FRONTEND_URL` | Allowed origin for CORS. | `http://localhost:5173` |
-| `PORT` | Backend server port. | `8000` |
+Configuration variables:
 
-> 🔒 **Security Notice:** The frontend never consumes API keys directly. All AI communication flows securely through the backend.
+```env
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-2.5-flash
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+FRONTEND_URL=http://localhost:5173
+```
+
+> 🔒 **Security Notice:** The frontend NEVER directly calls Gemini or consumes API keys. All AI requests flow securely through the FastAPI backend. API keys are never logged, stored in Git, or returned in client responses.
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Exact Local Setup
 
 ### 1. Prerequisites
 - **Node.js** v18+ and `npm`
-- **Python** 3.9+
+- **Python** 3.9+ and `venv`
 
 ### 2. Backend Setup
+
+Open a Terminal:
 
 ```bash
 cd ~/Desktop/TrustLens-AI/backend
@@ -173,10 +123,19 @@ Verify backend health:
 ```bash
 curl http://127.0.0.1:8000/api/health
 ```
+Response:
+```json
+{
+  "status": "ok",
+  "service": "TrustLens AI",
+  "version": "1.0.0",
+  "ai_engine": "google-gemini"
+}
+```
 
 ### 3. Frontend Setup
 
-In a new terminal window:
+Open another Terminal:
 
 ```bash
 cd ~/Desktop/TrustLens-AI/frontend
@@ -184,16 +143,16 @@ npm install
 npm run dev
 ```
 
-The app will be available at:
+Open your browser to:
 ```text
 http://localhost:5173
 ```
 
 ---
 
-## 🧪 Testing
+## 🧪 Testing Instructions
 
-Run the automated backend test suite (validates 17 core integration scenarios, including empty inputs, normal messages, scams, clickbait, URL validation, and oversized images):
+Run the full automated backend test suite (validating all 18 test cases including empty inputs, scams, sensational headlines, URLs, image uploads, camera snapshots, MIME checks, and size limits):
 
 ```bash
 cd ~/Desktop/TrustLens-AI/backend
@@ -201,7 +160,7 @@ source venv/bin/activate
 python3 test_all_endpoints.py
 ```
 
-To test building the production frontend bundle:
+Test production frontend build:
 
 ```bash
 cd ~/Desktop/TrustLens-AI/frontend
@@ -210,17 +169,36 @@ npm run build
 
 ---
 
-## 🛡️ Privacy & Security Commitments
+## 🔒 Security & Privacy Notes
 
-1. **Zero Retention by Default:** Pasted message contents and emails are analyzed in memory and never written to a server database.
-2. **Screenshots Never Stored:** Uploaded image files are processed strictly in RAM for OCR and dropped immediately upon completion.
-3. **No Credential Harvesting:** URLs are evaluated structurally and syntactically; TrustLens does not crawl or authenticate against dangerous remote hosts.
-4. **Rate Limiting:** Sliding-window rate limiters prevent API abuse and automated flooding.
+1. **Zero Raw Content Logging:** Pasted messages, emails, and claims are analyzed in memory and never logged to persistent disk or console.
+2. **Screenshots Never Stored:** Uploaded and camera-captured images are held in memory strictly for OCR and multimodal evaluation, then immediately freed from RAM.
+3. **Safe URL Evaluation:** URLs are evaluated structurally; TrustLens never crawls dangerous remote hosts or executes downloaded payloads.
+4. **Camera Track Release:** All active `MediaStream` camera tracks are explicitly stopped upon capture, cancelation, modal closing, or unmount.
 
 ---
 
-## ⚠️ Important Limitations
+## 📦 Deployment Guidance
 
-- **AI is Probabilistic:** Machine learning models may produce false positives or false negatives.
-- **Scores Are Not Legal Proof:** A high risk score flags suspicious patterns; it does not constitute court-admissible evidence of fraud. Conversely, a low score does not guarantee zero risk.
-- **Independent Verification:** Always confirm critical banking requests, courier deliveries, or health claims via official, published channels.
+### Backend Deployment (Render / Railway / Fly.io / Cloud Run)
+- Start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+- Set environment variables: `GEMINI_API_KEY`, `GEMINI_MODEL`, `FRONTEND_URL`.
+
+### Frontend Deployment (Vercel / Netlify / Cloudflare Pages)
+- Build command: `npm run build`
+- Output directory: `dist`
+- Set `VITE_API_URL` to your production backend URL.
+
+---
+
+## 🐙 GitHub Instructions
+
+Ensure `.env` and `venv` are not committed:
+
+```bash
+cd ~/Desktop/TrustLens-AI
+git status
+git add .
+git commit -m "feat: complete Gemini API integration and full TrustLens feature suite"
+git push origin main
+```

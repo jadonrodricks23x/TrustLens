@@ -37,19 +37,27 @@ async function handleResponse(response: Response): Promise<AnalysisResult> {
   }
 
   const data = await response.json();
-  if (typeof data.score !== 'number' || !data.risk_level || !Array.isArray(data.signals)) {
+  const score = typeof data.score === 'number' ? data.score : (typeof data.trust_score === 'number' ? data.trust_score : null);
+  
+  if (score === null || !data.risk_level || !Array.isArray(data.signals)) {
     throw new Error('Invalid response structure received from safety engine.');
   }
-  return data as AnalysisResult;
+
+  return {
+    ...data,
+    score,
+    summary: data.summary || data.explanation || '',
+    verdict: data.verdict || data.risk_level || 'Assessment complete',
+  } as AnalysisResult;
 }
 
-export async function checkHealth(): Promise<{ status: string; ai_mode: string; storage: string }> {
+export async function checkHealth(): Promise<{ status: string; ai_engine?: string; version?: string }> {
   try {
     const res = await fetchWithTimeout(`${BASE_URL}/api/health`, { method: 'GET' }, 5000);
     if (!res.ok) throw new Error('Health check failed');
     return await res.json();
   } catch {
-    return { status: 'offline', ai_mode: 'local_mock_mode', storage: 'local_storage_fallback' };
+    return { status: 'offline', ai_engine: 'local-mock-engine', version: '1.0.0' };
   }
 }
 

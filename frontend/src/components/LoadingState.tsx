@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 const STAGES = [
   { text: 'Scanning content...', icon: '🔍' },
+  { text: 'Analyzing with TrustLens...', icon: '🛡️' },
   { text: 'Identifying signals...', icon: '🧠' },
   { text: 'Building assessment...', icon: '📊' },
 ];

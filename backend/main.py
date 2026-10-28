@@ -17,7 +17,7 @@ from routes.screenshot import router as screenshot_router
 
 app = FastAPI(
     title="TrustLens AI API",
-    description="Explainable AI-powered digital safety platform backend.",
+    description="Explainable Gemini-powered digital safety platform backend.",
     version="1.0.0"
 )
 
@@ -56,24 +56,22 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
-    # Log error message safely without logging raw user content
+    # Log error message safely without logging raw user content or secrets
     print(f"[Internal Server Error] {type(exc).__name__}: {str(exc)}")
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={"detail": "TrustLens server encountered an error processing your analysis."}
     )
 
-# Health endpoint
+# Health endpoint conforming to Section 28
 @app.get("/api/health", tags=["Health"])
 async def health_check():
-    has_openai = bool(os.getenv("OPENAI_API_KEY", "").strip())
-    has_supabase = bool(os.getenv("SUPABASE_URL", "").strip())
+    has_gemini = bool(os.getenv("GEMINI_API_KEY", "").strip())
     return {
-        "status": "healthy",
+        "status": "ok",
         "service": "TrustLens AI",
         "version": "1.0.0",
-        "ai_mode": "live_openai" if has_openai else "local_mock_mode",
-        "storage": "supabase" if has_supabase else "local_storage_fallback"
+        "ai_engine": "google-gemini" if has_gemini else "local-mock-engine"
     }
 
 # Register routers

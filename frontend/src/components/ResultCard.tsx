@@ -3,7 +3,7 @@ import type { AnalysisResult } from '../types/analysis';
 import { ScoreDisplay } from './ScoreDisplay';
 import { SignalCard } from './SignalCard';
 import { saveToHistory } from '../services/storage';
-import { Check, Copy, Bookmark, RotateCcw, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Check, Copy, Bookmark, RotateCcw, AlertTriangle, ShieldCheck, Sparkles } from 'lucide-react';
 
 interface ResultCardProps {
   result: AnalysisResult;
@@ -14,13 +14,16 @@ export const ResultCard: React.FC<ResultCardProps> = ({ result, onReset }) => {
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  const displayScore = typeof result.score === 'number' ? result.score : (result.trust_score ?? 0);
+  const displayExplanation = result.explanation || result.summary || '';
+
   const handleCopy = async () => {
     const textToCopy = `TrustLens AI Assessment
-Score: ${result.score}/100 (${result.risk_level})
+TrustLens Score: ${displayScore}/100 (${result.risk_level})
 Verdict: ${result.verdict}
 
-Summary:
-${result.summary}
+Why This Matters:
+${displayExplanation}
 
 Signals Detected:
 ${result.signals.map((s) => `• [${s.severity.toUpperCase()}] ${s.name}: ${s.reason}`).join('\n')}
@@ -48,14 +51,26 @@ ${result.recommendation}
   return (
     <div className="w-full glass-card rounded-2xl p-6 sm:p-8 animate-fadeIn">
       {/* Banner if local pattern fallback was used */}
-      {result.local_signals_only && (
+      {result.local_signals_only ? (
         <div className="mb-6 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-600 dark:text-amber-400">
           <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>
-            <strong>Pattern-Based Assessment:</strong> AI analysis was unavailable or offline. The signals below are generated directly from local deterministic pattern detection rules.
+            <strong>Pattern-Based Assessment:</strong> Gemini API was unavailable or offline. The signals below are generated directly from local deterministic pattern detection rules.
           </span>
         </div>
-      )}
+      ) : result.is_mock ? (
+        <div className="mb-6 p-3 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-between gap-2 text-xs text-sky-600 dark:text-sky-400">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 shrink-0" />
+            <span>
+              <strong>Development Mock Mode:</strong> Running with local deterministic engine. Configure <code>GEMINI_API_KEY</code> in <code>backend/.env</code> for live Gemini API intelligence.
+            </span>
+          </div>
+          <span className="hidden sm:inline-block px-2 py-0.5 rounded bg-sky-500/20 text-[10px] uppercase font-bold tracking-wider">
+            Mock Mode
+          </span>
+        </div>
+      ) : null}
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200/70 dark:border-slate-800">
@@ -78,10 +93,10 @@ ${result.recommendation}
 
       {/* Score and Overview */}
       <div className="py-6">
-        <ScoreDisplay score={result.score} riskLevel={result.risk_level} />
+        <ScoreDisplay score={displayScore} riskLevel={result.risk_level} />
       </div>
 
-      {/* What We Detected */}
+      {/* What We Detected (Max 5 signals) */}
       <div className="my-6">
         <h4 className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
           <span>What we detected</span>
@@ -90,23 +105,23 @@ ${result.recommendation}
           </span>
         </h4>
         <div className="space-y-3">
-          {result.signals.map((sig, idx) => (
+          {result.signals.slice(0, 5).map((sig, idx) => (
             <SignalCard key={idx} signal={sig} />
           ))}
         </div>
       </div>
 
-      {/* Why This Matters */}
+      {/* Why This Matters / Explanation */}
       <div className="my-6 p-4 rounded-xl bg-slate-50/70 dark:bg-slate-850/50 border border-slate-200/60 dark:border-slate-800/60">
         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
           Why this matters
         </h4>
         <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-          {result.summary}
+          {displayExplanation}
         </p>
       </div>
 
-      {/* What Should You Do? */}
+      {/* What Should You Do? / Recommendation */}
       <div className="my-6 p-4 rounded-xl bg-lens-500/5 dark:bg-lens-500/10 border border-lens-500/20">
         <h4 className="text-xs font-bold uppercase tracking-wider text-lens-600 dark:text-lens-400 mb-1.5">
           What should you do?

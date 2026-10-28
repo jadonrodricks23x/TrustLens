@@ -3,19 +3,24 @@
 .env.local
 .env.*.local
 
+# Virtual environments
+venv/
+backend/venv/
+
+# Python caches
+__pycache__/
+backend/__pycache__/
+backend/*/__pycache__/
+*.pyc
+*.py[cod]
+*$py.class
+.pytest_cache/
+
 # Node
 node_modules/
 dist/
 dist-ssr/
 *.local
-
-# Python
-backend/venv/
-backend/__pycache__/
-backend/*/__pycache__/
-*.py[cod]
-*$py.class
-.pytest_cache/
 
 # OS
 .DS_Store

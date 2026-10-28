@@ -8,7 +8,9 @@ interface ScoreDisplayProps {
 
 export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, riskLevel }) => {
   const getBadgeConfig = () => {
-    switch (riskLevel) {
+    const normalized = (riskLevel || '').toUpperCase();
+
+    switch (normalized) {
       case 'LOW CONCERN':
         return {
           textColor: 'text-emerald-500 dark:text-emerald-400',
