@@ -21,7 +21,6 @@ def calculate_score_from_signals(signals: List[Dict[str, Any]], base_type: str) 
     elif base_type == "url":
         score = 20 + total
     else: # news / claim
-        # If there are any high severity signals (medical hoax, unverified death rumor), elevate baseline
         has_high = any(s.get("severity") == "high" for s in signals)
         has_medium = any(s.get("severity") == "medium" for s in signals)
         if has_high:
@@ -44,7 +43,18 @@ def get_risk_level(score: int) -> str:
         return "HIGH RISK INDICATORS"
 
 def get_verdict(score: int, analysis_type: str, signals: List[Dict[str, Any]]) -> str:
-    # Check for specific high-priority signals
+    # URL specific verdicts
+    if analysis_type == "url":
+        if score <= 30:
+            return "Standard secure domain structure"
+        elif score <= 60:
+            return "Potential redirection or unencrypted link"
+        elif score <= 80:
+            return "Suspicious URL / Masked destination"
+        else:
+            return "Deceptive phishing / High-risk URL"
+
+    # Check for specific high-priority signals in news
     signal_names = [s.get("name", "").lower() for s in signals]
     if any("death" in n for n in signal_names):
         return "Uncorroborated Death Rumor"
@@ -88,41 +98,72 @@ def generate_mock_analysis(
     if not signal_items:
         signal_items.append(
             SignalItem(
-                name="No Known Threat Signatures",
+                name="No Known Threat Signatures" if analysis_type != "url" else "Standard Secure Protocol",
                 severity="low",
-                reason="Did not match known pattern signatures for urgency coercion, scam patterns, or sensational phrasing."
+                reason="Did not match known threat signatures for deceptive redirection, raw IP hosts, or credential harvesting."
             )
         )
 
-    # Contextual summary & recommendation
-    if risk_level == "HIGH RISK INDICATORS":
-        summary = (
-            "Content exhibits critical risk signals or uncorroborated high-impact rumors lacking any verifiable source citation."
-        )
-        recommendation = (
-            "Do not share or act on this claim. Cross-reference official announcements and verified news agencies before trusting."
-        )
-    elif risk_level == "SUSPICIOUS":
-        summary = (
-            "Several warning patterns detected, including unverified claims, missing attribution, or sensational framing."
-        )
-        recommendation = (
-            "Treat this claim with skepticism. Independently verify the event on established national and international news outlets."
-        )
-    elif risk_level == "NEEDS VERIFICATION":
-        summary = (
-            "This content makes claims without providing direct verifiable references, primary citations, or timestamps."
-        )
-        recommendation = (
-            "Exercise caution. Independently confirm information before forwarding or accepting as factual."
-        )
+    # Contextual summary & recommendation tailored to analysis type
+    if analysis_type == "url":
+        if risk_level == "HIGH RISK INDICATORS":
+            summary = (
+                "URL exhibits severe deceptive patterns such as target phishing keywords, raw IP hosting, or unencrypted credential targets."
+            )
+            recommendation = (
+                "Do not click or enter credentials on this link. Navigate directly to the official website via a trusted bookmark."
+            )
+        elif risk_level == "SUSPICIOUS":
+            summary = (
+                "URL features warning indicators such as URL shortener masking, non-standard communication ports, or high-abuse TLDs."
+            )
+            recommendation = (
+                "Avoid submitting sensitive personal or payment details. Verify the true destination address before interacting."
+            )
+        elif risk_level == "NEEDS VERIFICATION":
+            summary = (
+                "URL exhibits minor anomalies such as unencrypted HTTP transmission or unusual path structuring."
+            )
+            recommendation = (
+                "Ensure a secure HTTPS connection is established before entering sensitive data."
+            )
+        else:
+            summary = (
+                "Standard web URL structure. Uses secure HTTPS protocol and conforms to expected domain naming standards."
+            )
+            recommendation = (
+                "Safe to browse. Maintain standard caution and verify site certificates."
+            )
     else:
-        summary = (
-            "No aggressive threat signatures detected. Content conforms to expected baseline communication patterns."
-        )
-        recommendation = (
-            "Standard safe practice: maintain healthy digital hygiene and independently verify unexpected claims."
-        )
+        # Default for scam / news / screenshot
+        if risk_level == "HIGH RISK INDICATORS":
+            summary = (
+                "Content exhibits critical threat signals, payment coercion, or uncorroborated viral rumors."
+            )
+            recommendation = (
+                "Do not share sensitive details, transfer money, or forward unverified claims. Verify through official channels."
+            )
+        elif risk_level == "SUSPICIOUS":
+            summary = (
+                "Several warning patterns detected, including unverified claims, missing attribution, or urgency pressure."
+            )
+            recommendation = (
+                "Treat this content with skepticism. Cross-check facts with established primary sources."
+            )
+        elif risk_level == "NEEDS VERIFICATION":
+            summary = (
+                "This content makes claims without providing direct verifiable references, primary citations, or timestamps."
+            )
+            recommendation = (
+                "Exercise caution. Independently confirm information before forwarding or accepting as factual."
+            )
+        else:
+            summary = (
+                "No aggressive threat signatures detected. Content conforms to expected baseline communication patterns."
+            )
+            recommendation = (
+                "Standard safe practice: maintain healthy digital hygiene and independently verify unexpected claims."
+            )
 
     return AnalysisResult(
         id=str(uuid.uuid4()),
