@@ -13,7 +13,8 @@ import { detectLocalUrlHints } from '../utils/urlSignals';
 import { 
   Send, Trash2, Upload, ExternalLink, AlertTriangle, 
   Sparkles, Image as ImageIcon, Camera, X, RefreshCw, 
-  Check, FlipHorizontal, AlertCircle, ClipboardPaste
+  Check, FlipHorizontal, AlertCircle, ClipboardPaste,
+  Maximize2
 } from 'lucide-react';
 
 const SAMPLE_PRESETS: Record<AnalysisType, { label: string; text: string }[]> = {
@@ -65,6 +66,8 @@ export const Analyze: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [showUrlWarningModal, setShowUrlWarningModal] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mobileCameraInputRef = useRef<HTMLInputElement>(null);
@@ -106,21 +109,57 @@ export const Analyze: React.FC = () => {
     setErrorMsg(null);
   };
 
+  // Helper for processing files from input or drag-and-drop
+  const processSelectedFile = (file: File, source: 'upload' | 'camera') => {
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      setErrorMsg(validation.error || 'Invalid file');
+      return;
+    }
+    setSelectedFile(file);
+    setImageSource(source);
+    setErrorMsg(null);
+    const reader = new FileReader();
+    reader.onload = () => setFilePreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
   // Image preview handler for file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const validation = validateImageFile(file);
-      if (!validation.valid) {
-        setErrorMsg(validation.error || 'Invalid file');
-        return;
-      }
-      setSelectedFile(file);
-      setImageSource('upload');
-      setErrorMsg(null);
-      const reader = new FileReader();
-      reader.onload = () => setFilePreview(reader.result as string);
-      reader.readAsDataURL(file);
+      processSelectedFile(e.target.files[0], 'upload');
+    }
+  };
+
+  // Drag and drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      processSelectedFile(e.dataTransfer.files[0], 'upload');
+    }
+  };
+
+  // Clipboard paste helper for active tab
+  const handlePasteToActive = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text) return;
+      if (activeTab === 'scam') setScamInput(text.trim());
+      else if (activeTab === 'news') setNewsInput(text.trim());
+      else if (activeTab === 'url') setUrlInput(text.trim());
+    } catch {
+      // ignore clipboard permission error
     }
   };
 
@@ -339,16 +378,21 @@ export const Analyze: React.FC = () => {
     }
   };
 
-  // Handle escape key to close camera modal
+  // Handle escape key to close modals & Cmd+Enter / Ctrl+Enter to trigger analysis
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isCameraOpen) {
-        handleCloseCamera();
+      if (e.key === 'Escape') {
+        if (isCameraOpen) handleCloseCamera();
+        if (isLightboxOpen) setIsLightboxOpen(false);
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleAnalyze();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isCameraOpen]);
+  }, [isCameraOpen, isLightboxOpen, activeTab, scamInput, newsInput, urlInput, selectedFile]);
 
   // Live client-side hint detection
   const scamHints = scamInput.length > 10 ? detectLocalScamHints(scamInput) : [];
@@ -423,6 +467,19 @@ export const Analyze: React.FC = () => {
           {/* TAB 1: SCAM ANALYZER */}
           {activeTab === 'scam' && (
             <div className="space-y-4">
+              <div className="flex items-center justify-between text-xs text-slate-400">
+                <span>Suspicious Message, Email or Text</span>
+                <button
+                  type="button"
+                  onClick={handlePasteToActive}
+                  className="apple-pill-btn inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-medium text-slate-300 hover:text-white"
+                  title="Paste from clipboard"
+                >
+                  <ClipboardPaste className="w-3.5 h-3.5" />
+                  <span>Paste text</span>
+                </button>
+              </div>
+
               <div className="relative">
                 <textarea
                   value={scamInput}
@@ -459,6 +516,19 @@ export const Analyze: React.FC = () => {
           {/* TAB 2: NEWS ANALYZER */}
           {activeTab === 'news' && (
             <div className="space-y-4">
+              <div className="flex items-center justify-between text-xs text-slate-400">
+                <span>Headline, Claim or Article</span>
+                <button
+                  type="button"
+                  onClick={handlePasteToActive}
+                  className="apple-pill-btn inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-medium text-slate-300 hover:text-white"
+                  title="Paste from clipboard"
+                >
+                  <ClipboardPaste className="w-3.5 h-3.5" />
+                  <span>Paste claim</span>
+                </button>
+              </div>
+
               <div className="relative">
                 <textarea
                   value={newsInput}
@@ -563,24 +633,33 @@ export const Analyze: React.FC = () => {
                   </p>
 
                   {/* Two Options Side-by-Side on Desktop, Stacked on Mobile */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div 
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                  >
                     {/* Option 1: Upload Image */}
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="glass-card-hover rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center text-center group cursor-pointer border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-lens-500 dark:hover:border-lens-400 transition-all"
+                      className={`glass-card-hover rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center text-center group cursor-pointer border-2 border-dashed transition-all ${
+                        isDragOver 
+                          ? 'border-lens-400 bg-lens-500/15 ring-4 ring-lens-400/20 scale-[1.01]' 
+                          : 'border-white/15 hover:border-lens-400/70'
+                      }`}
                       aria-label="Upload Image from your device"
                     >
-                      <div className="w-14 h-14 rounded-2xl bg-lens-500/10 text-lens-500 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-sm">
+                      <div className="w-14 h-14 rounded-2xl bg-lens-500/15 text-lens-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-md">
                         <Upload className="w-7 h-7" />
                       </div>
-                      <h4 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-1">
-                        Upload Image
+                      <h4 className="text-base font-bold text-white mb-1">
+                        {isDragOver ? 'Drop Image Here' : 'Upload Image'}
                       </h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs leading-relaxed">
-                        Select an existing PNG, JPG, JPEG, or WEBP screenshot from your device.
+                      <p className="text-xs text-slate-300 max-w-xs leading-relaxed">
+                        Drag & drop or select an existing PNG, JPG, JPEG, or WEBP screenshot.
                       </p>
-                      <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 group-hover:bg-lens-600 group-hover:text-white transition-colors">
+                      <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/10 text-white group-hover:bg-lens-600 transition-colors">
                         <ImageIcon className="w-3.5 h-3.5" />
                         <span>Choose File</span>
                       </div>
@@ -591,19 +670,19 @@ export const Analyze: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => startCamera('environment')}
-                      className="glass-card-hover rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center text-center group cursor-pointer border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-sky-500 dark:hover:border-sky-400 transition-all"
+                      className="glass-card-hover rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center text-center group cursor-pointer border-2 border-dashed border-white/15 hover:border-sky-400/70 transition-all"
                       aria-label="Take picture using device camera"
                     >
-                      <div className="w-14 h-14 rounded-2xl bg-sky-500/10 text-sky-500 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-sm">
+                      <div className="w-14 h-14 rounded-2xl bg-sky-500/15 text-sky-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-md">
                         <Camera className="w-7 h-7" />
                       </div>
-                      <h4 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-1">
+                      <h4 className="text-base font-bold text-white mb-1">
                         Take Picture
                       </h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs leading-relaxed">
-                        Use your phone or computer camera to snap a photo of a screen, message, or receipt.
+                      <p className="text-xs text-slate-300 max-w-xs leading-relaxed">
+                        Use your device camera to snap a photo of a screen, physical letter, or receipt.
                       </p>
-                      <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 group-hover:bg-sky-500 group-hover:text-white transition-colors">
+                      <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/10 text-white group-hover:bg-sky-500 transition-colors">
                         <Camera className="w-3.5 h-3.5" />
                         <span>Open Camera</span>
                       </div>
@@ -698,13 +777,21 @@ export const Analyze: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Image Display */}
-                  <div className="flex justify-center max-h-80 overflow-hidden rounded-xl bg-slate-900/50 p-2">
+                  {/* Image Display with Zoom Lightbox Trigger */}
+                  <div 
+                    onClick={() => setIsLightboxOpen(true)}
+                    className="relative group flex justify-center max-h-80 overflow-hidden rounded-2xl bg-black/40 border border-white/[0.08] p-2 cursor-pointer hover:border-lens-400/50 transition-all"
+                    title="Click to view full size"
+                  >
                     <img
                       src={filePreview}
                       alt="Selected screenshot preview for safety analysis"
-                      className="max-h-80 object-contain rounded-lg shadow-sm"
+                      className="max-h-80 object-contain rounded-xl shadow-lg group-hover:scale-[1.01] transition-transform duration-300"
                     />
+                    <div className="absolute bottom-4 right-4 px-3 py-1.5 rounded-xl bg-black/70 backdrop-blur-md text-white text-xs font-medium flex items-center gap-1.5 border border-white/20 opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all shadow-lg">
+                      <Maximize2 className="w-3.5 h-3.5 text-lens-400" />
+                      <span>Inspect Zoom</span>
+                    </div>
                   </div>
                 </div>
               )}
@@ -733,6 +820,7 @@ export const Analyze: React.FC = () => {
                   ? 'Analyze Screenshot'
                   : 'Analyze with TrustLens'}
               </span>
+              <kbd className="hidden sm:inline-block ml-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-white/20 text-white/90 border border-white/20">⌘↵</kbd>
             </button>
           </div>
         </div>
@@ -842,6 +930,12 @@ export const Analyze: React.FC = () => {
               ) : (
                 /* Active video streaming */
                 <div className="relative w-full h-full flex items-center justify-center">
+                  {/* Live Sensor Feed pill */}
+                  <div className="absolute top-4 left-4 z-20 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md border border-white/10 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-300 shadow-md">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>Live Sensor Feed</span>
+                  </div>
+
                   <video
                     ref={videoRef}
                     autoPlay
@@ -960,6 +1054,38 @@ export const Analyze: React.FC = () => {
                 <ExternalLink className="w-3 h-3" />
               </a>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fullscreen Image Lightbox Modal */}
+      {isLightboxOpen && filePreview && (
+        <div 
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setIsLightboxOpen(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/90 backdrop-blur-xl animate-fadeIn"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="relative max-w-5xl max-h-[92vh] w-full flex flex-col items-center justify-center"
+          >
+            <div className="w-full flex items-center justify-between pb-3 px-1 text-slate-300">
+              <span className="text-xs font-mono">Press ESC or click outside to close</span>
+              <button
+                type="button"
+                onClick={() => setIsLightboxOpen(false)}
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10"
+                aria-label="Close image preview"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <img
+              src={filePreview}
+              alt="Full size screenshot preview"
+              className="max-h-[82vh] w-auto max-w-full object-contain rounded-2xl shadow-2xl border border-white/10"
+            />
           </div>
         </div>
       )}
