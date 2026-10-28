@@ -18,20 +18,20 @@ import {
 
 const SAMPLE_PRESETS: Record<AnalysisType, { label: string; text: string }[]> = {
   scam: [
-    { label: "💳 Bank OTP Scam", text: "URGENT: Your HDFC Bank account has been temporarily locked due to suspicious activity. Verify your OTP within 10 minutes at http://bit.ly/bank-security-verify to prevent permanent closure." },
-    { label: "🎁 Lottery Prize", text: "Congratulations! You have won ₹50,000 in the Google 2026 Annual Rewards. Send your Aadhaar and bank details to claim." },
-    { label: "💼 Remote Job Offer", text: "Daily Part-Time Job: Earn $300-$500 per day by rating products online. Pay $30 registration deposit to start immediately." },
+    { label: "Bank OTP Alert", text: "URGENT: Your HDFC Bank account has been temporarily locked due to suspicious activity. Verify your OTP within 10 minutes at http://bit.ly/bank-security-verify to prevent permanent closure." },
+    { label: "Lottery Reward", text: "Congratulations! You have won ₹50,000 in the Google 2026 Annual Rewards. Send your Aadhaar and bank details to claim." },
+    { label: "Remote Job Offer", text: "Daily Part-Time Job: Earn $300-$500 per day by rating products online. Pay $30 registration deposit to start immediately." },
   ],
   news: [
-    { label: "📰 Nana Patekar Passing", text: "Nana Patekar is dead" },
-    { label: "🔍 Modi Death Rumor", text: "Modi is dead" },
-    { label: "🍋 Lemon Water Cancer Cure", text: "Drinking boiled lemon water cures cancer and eliminates diabetes in 24 hours" },
-    { label: "🌍 Climate Study", text: "According to Reuters, international meteorological researchers reported an average 1.2 degree increase in sea surface temperatures." },
+    { label: "Nana Patekar Passing", text: "Nana Patekar is dead" },
+    { label: "Modi Death Rumor", text: "Modi is dead" },
+    { label: "Lemon Water Cure", text: "Drinking boiled lemon water cures cancer and eliminates diabetes in 24 hours" },
+    { label: "Climate Study", text: "According to Reuters, international meteorological researchers reported an average 1.2 degree increase in sea surface temperatures." },
   ],
   url: [
-    { label: "🚨 Phishing Login", text: "http://paypal-security-update.xyz/login" },
-    { label: "✂️ Bitly Redirect", text: "http://bit.ly/bank-unlock-urgent" },
-    { label: "✅ Verified Domain", text: "https://github.com" },
+    { label: "Phishing Login URL", text: "http://paypal-security-update.xyz/login" },
+    { label: "Shortened Redirect", text: "http://bit.ly/bank-unlock-urgent" },
+    { label: "Verified HTTPS Domain", text: "https://github.com" },
   ],
   screenshot: []
 };

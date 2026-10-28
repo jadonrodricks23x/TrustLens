@@ -245,8 +245,9 @@ export const Learn: React.FC = () => {
                 </span>
                 <div className="flex flex-wrap gap-1.5 mt-1">
                   {currentQ.signals.map((sig, i) => (
-                    <span key={i} className="text-xs font-medium px-2 py-0.5 rounded-md bg-lens-500/10 text-lens-700 dark:text-lens-300">
-                      🚩 {sig}
+                    <span key={i} className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-lens-500/10 text-lens-300 border border-lens-500/20">
+                      <AlertCircle className="w-3 h-3 text-lens-400 shrink-0" />
+                      <span>{sig}</span>
                     </span>
                   ))}
                 </div>

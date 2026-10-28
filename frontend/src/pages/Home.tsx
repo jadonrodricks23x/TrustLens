@@ -55,7 +55,7 @@ export const Home: React.FC = () => {
                 <ShieldAlert className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-                <span>🚨 Scam Detector</span>
+                <span>Scam Detector</span>
               </h3>
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
                 Analyze suspicious messages, WhatsApp forwards, payment requests and email urgency.
@@ -77,7 +77,7 @@ export const Home: React.FC = () => {
                 <Newspaper className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-                <span>📰 News Analyzer</span>
+                <span>News Analyzer</span>
               </h3>
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
                 Verify viral claims, celebrity death rumors, and miracle cures against live Google News & Wikipedia.
@@ -99,7 +99,7 @@ export const Home: React.FC = () => {
                 <Link2 className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-                <span>🔗 Link Checker</span>
+                <span>Link Checker</span>
               </h3>
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
                 Inspect suspicious URLs, shortened links, credential harvesters, and deceptive domains.
@@ -121,7 +121,7 @@ export const Home: React.FC = () => {
                 <Camera className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-                <span>📸 Screenshot OCR</span>
+                <span>Screenshot OCR</span>
               </h3>
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
                 Upload images or capture photos using device camera to extract text and analyze risk signals.
@@ -152,7 +152,7 @@ export const Home: React.FC = () => {
               <Search className="w-6 h-6" />
             </div>
             <h3 className="text-lg font-bold text-white">
-              🔍 Detect
+              Detect
             </h3>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
               Identify suspicious signals across urgency keywords, redirection tricks, and emotional framing.
@@ -164,7 +164,7 @@ export const Home: React.FC = () => {
               <Brain className="w-6 h-6" />
             </div>
             <h3 className="text-lg font-bold text-white">
-              🧠 Understand
+              Understand
             </h3>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
               See why something was flagged with concise signal breakdowns and explainable risk scores.
@@ -176,7 +176,7 @@ export const Home: React.FC = () => {
               <ShieldCheck className="w-6 h-6" />
             </div>
             <h3 className="text-lg font-bold text-white">
-              🛡️ Decide
+              Decide
             </h3>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
               Make a safer, more informed decision with concrete recommendations rather than binary assumptions.
