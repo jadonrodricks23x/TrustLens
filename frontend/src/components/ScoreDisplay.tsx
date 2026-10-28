@@ -13,40 +13,44 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, riskLevel }) 
     switch (normalized) {
       case 'LOW CONCERN':
         return {
-          textColor: 'text-emerald-500 dark:text-emerald-400',
-          bgColor: 'bg-emerald-500/10 border-emerald-500/30',
-          dotColor: 'bg-emerald-500',
+          textColor: 'text-emerald-400',
+          bgColor: 'bg-emerald-500/15 border-emerald-500/30',
+          dotColor: 'bg-emerald-400 shadow-[0_0_8px_#34d399]',
           barColor: 'from-emerald-500 to-teal-400',
           label: 'LOW CONCERN',
-          icon: '🟢',
+          glow: 'shadow-[0_0_30px_rgba(16,185,129,0.15)]',
+          description: 'Normal communication patterns & verified factual claims'
         };
       case 'NEEDS VERIFICATION':
         return {
-          textColor: 'text-amber-500 dark:text-amber-400',
-          bgColor: 'bg-amber-500/10 border-amber-500/30',
-          dotColor: 'bg-amber-500',
-          barColor: 'from-amber-500 to-yellow-400',
+          textColor: 'text-sky-400',
+          bgColor: 'bg-sky-500/15 border-sky-500/30',
+          dotColor: 'bg-sky-400 shadow-[0_0_8px_#38bdf8]',
+          barColor: 'from-sky-500 to-cyan-400',
           label: 'NEEDS VERIFICATION',
-          icon: '🟡',
+          glow: 'shadow-[0_0_30px_rgba(14,165,233,0.15)]',
+          description: 'Lacks sufficient citations or official primary corroboration'
         };
       case 'SUSPICIOUS':
         return {
-          textColor: 'text-orange-500 dark:text-orange-400',
-          bgColor: 'bg-orange-500/10 border-orange-500/30',
-          dotColor: 'bg-orange-500',
-          barColor: 'from-orange-500 to-amber-500',
+          textColor: 'text-amber-400',
+          bgColor: 'bg-amber-500/15 border-amber-500/30',
+          dotColor: 'bg-amber-400 shadow-[0_0_8px_#fbbf24]',
+          barColor: 'from-amber-500 to-orange-400',
           label: 'SUSPICIOUS',
-          icon: '🟠',
+          glow: 'shadow-[0_0_30px_rgba(245,158,11,0.15)]',
+          description: 'Multiple deceptive indicators, redirection, or uncorroborated rumor'
         };
       case 'HIGH RISK INDICATORS':
       default:
         return {
-          textColor: 'text-rose-500 dark:text-rose-400',
-          bgColor: 'bg-rose-500/10 border-rose-500/30',
-          dotColor: 'bg-rose-500',
-          barColor: 'from-rose-600 to-orange-500',
+          textColor: 'text-rose-400',
+          bgColor: 'bg-rose-500/15 border-rose-500/30',
+          dotColor: 'bg-rose-400 shadow-[0_0_8px_#f43f5e]',
+          barColor: 'from-rose-500 to-red-500',
           label: 'HIGH RISK INDICATORS',
-          icon: '🔴',
+          glow: 'shadow-[0_0_30px_rgba(244,63,94,0.18)]',
+          description: 'Severe fraud signals, credential harvesting, or debunked disinformation'
         };
     }
   };
@@ -54,33 +58,40 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, riskLevel }) 
   const badge = getBadgeConfig();
 
   return (
-    <div className="flex flex-col items-center justify-center text-center p-6 bg-slate-50/50 dark:bg-slate-900/40 rounded-2xl border border-slate-200/60 dark:border-slate-800/60">
-      <div className="text-xs font-semibold tracking-wider uppercase text-slate-500 dark:text-slate-400 mb-2">
-        TrustLens Score
+    <div className={`relative overflow-hidden flex flex-col items-center justify-center text-center p-6 sm:p-8 rounded-3xl bg-slate-900/60 backdrop-blur-2xl border border-white/[0.08] ${badge.glow}`}>
+      {/* Background radial accent glow */}
+      <div className="absolute inset-0 bg-radial-gradient pointer-events-none opacity-20" />
+
+      <div className="text-[11px] font-semibold tracking-widest uppercase text-slate-400 mb-2">
+        TrustLens Concern Score
       </div>
 
-      <div className="flex items-baseline gap-1.5 my-2">
-        <span className={`text-6xl font-extrabold tracking-tight ${badge.textColor}`}>
+      <div className="flex items-baseline justify-center gap-2 my-1">
+        <span className={`text-6xl sm:text-7xl font-extrabold tracking-tight ${badge.textColor} drop-shadow-sm`}>
           {score}
         </span>
-        <span className="text-2xl font-medium text-slate-400 dark:text-slate-500">
+        <span className="text-2xl sm:text-3xl font-semibold text-slate-500">
           / 100
         </span>
       </div>
 
-      {/* Progress meter */}
-      <div className="w-full max-w-xs h-2.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden my-3">
+      {/* Sleek Luminous Gauge */}
+      <div className="w-full max-w-sm h-3 bg-white/[0.06] rounded-full overflow-hidden p-0.5 border border-white/10 my-4">
         <div
-          className={`h-full bg-gradient-to-r ${badge.barColor} transition-all duration-700 ease-out`}
-          style={{ width: `${Math.max(5, Math.min(100, score))}%` }}
+          className={`h-full bg-gradient-to-r ${badge.barColor} rounded-full transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(255,255,255,0.2)]`}
+          style={{ width: `${Math.max(6, Math.min(100, score))}%` }}
         />
       </div>
 
-      {/* Risk Badge */}
-      <div className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs font-semibold mt-1 ${badge.bgColor} ${badge.textColor}`}>
+      {/* Pill Badge */}
+      <div className={`inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border text-xs font-bold tracking-wide ${badge.bgColor} ${badge.textColor} backdrop-blur-md`}>
         <span className={`w-2 h-2 rounded-full ${badge.dotColor}`} />
         <span>{badge.label}</span>
       </div>
+
+      <p className="text-xs text-slate-400 mt-2.5 max-w-sm">
+        {badge.description}
+      </p>
     </div>
   );
 };

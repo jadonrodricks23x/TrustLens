@@ -1,13 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Shield, Sun, Moon, Menu, X, Sparkles } from 'lucide-react';
+import { Shield, Menu, X, Sparkles } from 'lucide-react';
 
-interface NavbarProps {
-  isDark: boolean;
-  onToggleTheme: () => void;
-}
-
-export const Navbar: React.FC<NavbarProps> = ({ isDark, onToggleTheme }) => {
+export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
 
@@ -21,34 +16,34 @@ export const Navbar: React.FC<NavbarProps> = ({ isDark, onToggleTheme }) => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <header className="sticky top-0 z-50 w-full backdrop-blur-md bg-white/80 dark:bg-slate-900/80 border-b border-slate-200/80 dark:border-slate-800/80 transition-colors">
+    <header className="sticky top-0 z-50 w-full backdrop-blur-xl bg-[#0B0F17]/80 border-b border-white/[0.08] shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand Logo */}
         <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-tr from-lens-600 to-sky-400 text-white shadow-sm shadow-lens-500/20 group-hover:scale-105 transition-transform">
+          <div className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-tr from-lens-600 via-sky-500 to-cyan-400 text-white shadow-[0_0_15px_rgba(14,165,233,0.4)] group-hover:scale-105 transition-transform">
             <Shield className="w-5 h-5 stroke-[2.2]" />
-            <div className="absolute w-2 h-2 rounded-full bg-white top-2.5 right-2.5" />
+            <div className="absolute w-2 h-2 rounded-full bg-white top-2.5 right-2.5 shadow-sm" />
           </div>
           <div className="flex flex-col">
-            <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-white leading-none">
-              TrustLens<span className="text-lens-500">.ai</span>
+            <span className="font-bold text-lg tracking-tight text-white leading-none">
+              TrustLens<span className="text-lens-400">.ai</span>
             </span>
-            <span className="text-[10px] text-slate-400 tracking-wider uppercase font-medium">
+            <span className="text-[10px] text-slate-400 tracking-wider uppercase font-medium mt-0.5">
               Look Closer. Trust Smarter.
             </span>
           </div>
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-1">
+        <nav className="hidden md:flex items-center gap-1.5 p-1 rounded-2xl bg-white/[0.03] border border-white/[0.06] backdrop-blur-md">
           {navLinks.map((link) => (
             <Link
               key={link.path}
               to={link.path}
-              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-4 py-1.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                 isActive(link.path)
-                  ? 'text-lens-600 dark:text-lens-400 bg-lens-500/10'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                  ? 'text-white bg-white/[0.12] shadow-sm font-semibold border border-white/10'
+                  : 'text-slate-300 hover:text-white hover:bg-white/[0.06]'
               }`}
             >
               {link.name}
@@ -57,32 +52,21 @@ export const Navbar: React.FC<NavbarProps> = ({ isDark, onToggleTheme }) => {
         </nav>
 
         {/* Right side controls */}
-        <div className="flex items-center gap-2">
-          {/* Theme Toggle Button */}
-          <button
-            type="button"
-            onClick={onToggleTheme}
-            className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-            aria-label="Toggle theme"
-          >
-            {isDark ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-slate-600" />}
-          </button>
-
+        <div className="flex items-center gap-3">
           {/* Quick CTA */}
           <Link
             to="/analyze"
-            className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-lens-600 hover:bg-lens-700 text-white transition-colors shadow-sm"
+            className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold apple-primary-btn text-white transition-all"
           >
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Analyze</span>
+            <span>Analyze Now</span>
           </Link>
 
           {/* Mobile menu button */}
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="md:hidden p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
             aria-label="Open navigation menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -90,18 +74,18 @@ export const Navbar: React.FC<NavbarProps> = ({ isDark, onToggleTheme }) => {
         </div>
       </div>
 
-      {/* Mobile Menu Drawer */}
+      {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden px-4 pt-2 pb-4 space-y-1 bg-white/95 dark:bg-slate-900/95 border-b border-slate-200 dark:border-slate-800 backdrop-blur-lg animate-fadeIn">
+        <div className="md:hidden px-4 pt-3 pb-6 border-b border-white/10 bg-[#0B0F17]/95 backdrop-blur-2xl space-y-2">
           {navLinks.map((link) => (
             <Link
               key={link.path}
               to={link.path}
               onClick={() => setMobileMenuOpen(false)}
-              className={`block px-3.5 py-2.5 rounded-xl text-base font-medium transition-colors ${
+              className={`block px-4 py-2.5 rounded-xl text-sm font-medium ${
                 isActive(link.path)
-                  ? 'text-lens-600 dark:text-lens-400 bg-lens-500/10'
-                  : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  ? 'bg-lens-500/20 text-white font-semibold border border-lens-500/30'
+                  : 'text-slate-300 hover:bg-white/5 hover:text-white'
               }`}
             >
               {link.name}
@@ -111,10 +95,10 @@ export const Navbar: React.FC<NavbarProps> = ({ isDark, onToggleTheme }) => {
             <Link
               to="/analyze"
               onClick={() => setMobileMenuOpen(false)}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-lens-600 text-white"
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold apple-primary-btn text-white"
             >
               <Sparkles className="w-4 h-4" />
-              <span>Launch Analyzer</span>
+              <span>Analyze Now</span>
             </Link>
           </div>
         </div>

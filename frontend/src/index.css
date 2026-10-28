@@ -3,17 +3,105 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    color-scheme: dark;
+  }
+
   body {
-    @apply bg-surface-light text-slate-900 dark:bg-surface-dark dark:text-slate-100 font-sans antialiased selection:bg-lens-500 selection:text-white min-h-screen transition-colors duration-200;
+    @apply bg-[#07090E] text-slate-100 font-sans antialiased selection:bg-lens-500 selection:text-white min-h-screen;
+    background-color: #07090E;
+    background-image: 
+      radial-gradient(circle at 50% -10%, rgba(14, 165, 233, 0.18), transparent 45%),
+      radial-gradient(circle at 10% 25%, rgba(99, 102, 241, 0.12), transparent 35%),
+      radial-gradient(circle at 90% 65%, rgba(16, 185, 129, 0.09), transparent 40%);
+    background-attachment: fixed;
   }
 }
 
-.glass-card {
-  @apply bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 shadow-sm transition-all duration-200;
+/* Apple Glassmorphism Core Utilities */
+.glass-card, .apple-glass-card {
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 
+    0 16px 40px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.glass-card-hover {
-  @apply glass-card hover:border-lens-500/40 dark:hover:border-lens-400/40 hover:shadow-md;
+.glass-card-hover, .apple-glass-hover {
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 
+    0 16px 40px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card-hover:hover, .apple-glass-hover:hover {
+  background: rgba(22, 32, 54, 0.78);
+  border-color: rgba(56, 189, 248, 0.35);
+  box-shadow: 
+    0 24px 50px rgba(0, 0, 0, 0.5),
+    0 0 25px rgba(14, 165, 233, 0.18),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.apple-glass-input {
+  background: rgba(10, 15, 28, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35);
+  color: #ffffff;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.apple-glass-input:focus {
+  border-color: rgba(56, 189, 248, 0.65);
+  box-shadow: 
+    0 0 0 3px rgba(14, 165, 233, 0.22),
+    inset 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+
+.apple-pill-btn {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+  transition: all 0.18s ease;
+}
+
+.apple-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.apple-primary-btn {
+  background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 50%, #38bdf8 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 
+    0 4px 20px rgba(14, 165, 233, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.apple-primary-btn:hover {
+  box-shadow: 
+    0 6px 28px rgba(14, 165, 233, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  transform: translateY(-1px);
+}
+
+.apple-primary-btn:active {
+  transform: translateY(1px);
 }
 
 /* Custom subtle scrollbar */
@@ -25,8 +113,9 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-slate-300 dark:bg-slate-700 rounded-full;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-slate-400 dark:bg-slate-600;
+  background: rgba(255, 255, 255, 0.28);
 }

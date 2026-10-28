@@ -3,7 +3,7 @@ import type { AnalysisResult } from '../types/analysis';
 import { ScoreDisplay } from './ScoreDisplay';
 import { SignalCard } from './SignalCard';
 import { saveToHistory } from '../services/storage';
-import { Check, Copy, Bookmark, RotateCcw, ShieldCheck, Sparkles } from 'lucide-react';
+import { Check, Copy, Bookmark, RotateCcw, ShieldCheck, Sparkles, HelpCircle } from 'lucide-react';
 
 interface ResultCardProps {
   result: AnalysisResult;
@@ -31,7 +31,7 @@ ${result.signals.map((s) => `• [${s.severity.toUpperCase()}] ${s.name}: ${s.re
 Recommended Action:
 ${result.recommendation}
 
-(Note: AI assessment is not proof. Verify via independent reliable sources.)`;
+(Note: AI assessment is not definitive proof. Verify via independent reliable sources.)`;
 
     try {
       await navigator.clipboard.writeText(textToCopy);
@@ -49,52 +49,59 @@ ${result.recommendation}
   };
 
   return (
-    <div className="w-full glass-card rounded-2xl p-6 sm:p-8 animate-fadeIn">
+    <div className="w-full rounded-3xl p-6 sm:p-8 apple-glass-card border border-white/[0.1] shadow-[0_20px_50px_rgba(0,0,0,0.5)] animate-fadeIn space-y-6">
       {/* Active Analysis Engine Badge */}
-      <div className="mb-6 p-3 rounded-xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-sky-500/10 border border-emerald-500/20 flex items-center justify-between gap-2 text-xs text-emerald-700 dark:text-emerald-300">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 shrink-0 text-emerald-500" />
+      <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-sky-500/10 border border-emerald-500/20 flex items-center justify-between gap-3 text-xs text-emerald-300">
+        <div className="flex items-center gap-2.5">
+          <Sparkles className="w-4 h-4 shrink-0 text-emerald-400" />
           <span>
-            <strong>TrustLens Safety Intelligence:</strong> Analyzed using real-time web telemetry and explainable signal detection.
+            <strong className="text-white">TrustLens Intelligence:</strong> Analyzed using real-time web telemetry and explainable signal detection.
           </span>
         </div>
-        <span className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-emerald-500/20 text-[10px] uppercase font-bold tracking-wider text-emerald-600 dark:text-emerald-400">
+        <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-[10px] uppercase font-bold tracking-wider text-emerald-300 border border-emerald-500/30">
           Verified
         </span>
       </div>
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200/70 dark:border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/[0.08]">
         <div>
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-lens-500" />
-            <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-lens-500/15 border border-lens-500/30 text-lens-400">
+              <ShieldCheck className="w-5 h-5 stroke-[2.2]" />
+            </div>
+            <h3 className="text-2xl font-bold tracking-tight text-white">
               TrustLens Assessment
             </h3>
           </div>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Verdict: <span className="font-semibold text-slate-700 dark:text-slate-300">{result.verdict}</span>
+          <p className="text-sm text-slate-300 mt-1.5 flex items-center gap-1.5">
+            <span>Verdict:</span>
+            <span className="font-semibold text-white px-2 py-0.5 rounded-md bg-white/[0.08] border border-white/10">
+              {result.verdict}
+            </span>
           </p>
         </div>
 
-        <div className="text-xs text-slate-400 dark:text-slate-500 font-mono">
-          {new Date(result.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        <div className="text-xs text-slate-400 font-mono px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.06] self-start sm:self-auto">
+          {new Date(result.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
         </div>
       </div>
 
       {/* Score and Overview */}
-      <div className="py-6">
+      <div className="py-2">
         <ScoreDisplay score={displayScore} riskLevel={result.risk_level} />
       </div>
 
-      {/* What We Detected (Max 5 signals) */}
-      <div className="my-6">
-        <h4 className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-          <span>What we detected</span>
-          <span className="text-xs font-normal text-slate-400">
-            ({result.signals.length} {result.signals.length === 1 ? 'signal' : 'signals'})
-          </span>
-        </h4>
+      {/* What We Detected (Signals) */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+            <span>What we detected</span>
+            <span className="text-[11px] font-normal text-slate-400 px-2 py-0.5 rounded-full bg-white/[0.06]">
+              {result.signals.length} {result.signals.length === 1 ? 'signal' : 'signals'}
+            </span>
+          </h4>
+        </div>
         <div className="space-y-3">
           {result.signals.slice(0, 5).map((sig, idx) => (
             <SignalCard key={idx} signal={sig} />
@@ -103,31 +110,32 @@ ${result.recommendation}
       </div>
 
       {/* Why This Matters / Explanation */}
-      <div className="my-6 p-4 rounded-xl bg-slate-50/70 dark:bg-slate-850/50 border border-slate-200/60 dark:border-slate-800/60">
-        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
-          Why this matters
+      <div className="p-5 rounded-2xl bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] space-y-2">
+        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+          <HelpCircle className="w-3.5 h-3.5 text-lens-400" />
+          <span>Why this matters</span>
         </h4>
-        <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+        <p className="text-sm text-slate-200 leading-relaxed font-normal">
           {displayExplanation}
         </p>
       </div>
 
       {/* What Should You Do? / Recommendation */}
-      <div className="my-6 p-4 rounded-xl bg-lens-500/5 dark:bg-lens-500/10 border border-lens-500/20">
-        <h4 className="text-xs font-bold uppercase tracking-wider text-lens-600 dark:text-lens-400 mb-1.5">
+      <div className="p-5 rounded-2xl bg-lens-500/[0.08] backdrop-blur-xl border border-lens-500/25 space-y-2">
+        <h4 className="text-xs font-bold uppercase tracking-wider text-lens-400">
           What should you do?
         </h4>
-        <p className="text-sm font-medium text-slate-800 dark:text-slate-200 leading-relaxed">
+        <p className="text-sm font-medium text-white leading-relaxed">
           {result.recommendation}
         </p>
       </div>
 
       {/* Action Buttons */}
-      <div className="pt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200/70 dark:border-slate-800">
+      <div className="pt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.08]">
         <button
           type="button"
           onClick={onReset}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-slate-200 hover:text-white transition-all"
         >
           <RotateCcw className="w-4 h-4" />
           <span>Analyze Another</span>
@@ -137,17 +145,17 @@ ${result.recommendation}
           <button
             type="button"
             onClick={handleCopy}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-slate-200 hover:text-white transition-all"
             title="Copy full assessment to clipboard"
           >
             {copied ? (
               <>
-                <Check className="w-4 h-4 text-emerald-500" />
-                <span className="text-emerald-600 dark:text-emerald-400">Copied!</span>
+                <Check className="w-4 h-4 text-emerald-400" />
+                <span className="text-emerald-400 font-semibold">Copied to Clipboard!</span>
               </>
             ) : (
               <>
-                <Copy className="w-4 h-4 text-slate-500" />
+                <Copy className="w-4 h-4 text-slate-400" />
                 <span>Copy Result</span>
               </>
             )}
@@ -156,13 +164,13 @@ ${result.recommendation}
           <button
             type="button"
             onClick={handleSave}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-medium bg-lens-600 hover:bg-lens-700 text-white transition-colors shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold apple-primary-btn text-white transition-all shadow-md"
             title="Save result to local history"
           >
             {saved ? (
               <>
                 <Check className="w-4 h-4" />
-                <span>Saved!</span>
+                <span>Saved to History!</span>
               </>
             ) : (
               <>

@@ -13,13 +13,27 @@ import { detectLocalUrlHints } from '../utils/urlSignals';
 import { 
   Send, Trash2, Upload, ExternalLink, AlertTriangle, 
   Sparkles, Image as ImageIcon, Camera, X, RefreshCw, 
-  Check, FlipHorizontal, AlertCircle 
+  Check, FlipHorizontal, AlertCircle, ClipboardPaste
 } from 'lucide-react';
 
-const SAMPLES = {
-  scam: "Congratulations! You have won ₹50,000. Send your OTP immediately to claim your reward.",
-  news: "Scientists have discovered that drinking one cup of coffee every day guarantees you will live 20 years longer.",
-  url: "https://example.com/claim-prize",
+const SAMPLE_PRESETS: Record<AnalysisType, { label: string; text: string }[]> = {
+  scam: [
+    { label: "💳 Bank OTP Scam", text: "URGENT: Your HDFC Bank account has been temporarily locked due to suspicious activity. Verify your OTP within 10 minutes at http://bit.ly/bank-security-verify to prevent permanent closure." },
+    { label: "🎁 Lottery Prize", text: "Congratulations! You have won ₹50,000 in the Google 2026 Annual Rewards. Send your Aadhaar and bank details to claim." },
+    { label: "💼 Remote Job Offer", text: "Daily Part-Time Job: Earn $300-$500 per day by rating products online. Pay $30 registration deposit to start immediately." },
+  ],
+  news: [
+    { label: "📰 Nana Patekar Passing", text: "Nana Patekar is dead" },
+    { label: "🔍 Modi Death Rumor", text: "Modi is dead" },
+    { label: "🍋 Lemon Water Cancer Cure", text: "Drinking boiled lemon water cures cancer and eliminates diabetes in 24 hours" },
+    { label: "🌍 Climate Study", text: "According to Reuters, international meteorological researchers reported an average 1.2 degree increase in sea surface temperatures." },
+  ],
+  url: [
+    { label: "🚨 Phishing Login", text: "http://paypal-security-update.xyz/login" },
+    { label: "✂️ Bitly Redirect", text: "http://bit.ly/bank-unlock-urgent" },
+    { label: "✅ Verified Domain", text: "https://github.com" },
+  ],
+  screenshot: []
 };
 
 export const Analyze: React.FC = () => {
@@ -374,31 +388,37 @@ export const Analyze: React.FC = () => {
           onReset={() => setErrorMsg(null)}
         />
       ) : (
-        <div className="glass-card rounded-2xl p-6 sm:p-8 space-y-6">
-          {/* Sample Data Quick Fill */}
-          <div className="flex flex-wrap items-center justify-between gap-2 pb-2">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              {activeTab === 'scam' && 'Suspicious Message / Email Analyzer'}
-              {activeTab === 'news' && 'News Headline / Claim Verifier'}
-              {activeTab === 'url' && 'URL Safety Inspector'}
-              {activeTab === 'screenshot' && 'Screenshot OCR & Safety Analyzer'}
-            </span>
-
-            {activeTab !== 'screenshot' && (
-              <button
-                type="button"
-                onClick={() => {
-                  if (activeTab === 'scam') setScamInput(SAMPLES.scam);
-                  if (activeTab === 'news') setNewsInput(SAMPLES.news);
-                  if (activeTab === 'url') setUrlInput(SAMPLES.url);
-                }}
-                className="text-xs font-medium text-lens-600 dark:text-lens-400 hover:underline inline-flex items-center gap-1"
-              >
-                <Sparkles className="w-3 h-3" />
-                <span>Load sample example</span>
-              </button>
-            )}
-          </div>
+        <div className="apple-glass-card rounded-3xl p-6 sm:p-8 space-y-6 border border-white/[0.1] shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+          {/* Quick Sample Presets */}
+          {activeTab !== 'screenshot' && (
+            <div className="space-y-2 pb-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-lens-400" />
+                  <span>Quick Test Samples</span>
+                </span>
+                <span className="text-xs text-slate-500">
+                  Click to prefill and analyze
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {SAMPLE_PRESETS[activeTab]?.map((sample, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      if (activeTab === 'scam') setScamInput(sample.text);
+                      if (activeTab === 'news') setNewsInput(sample.text);
+                      if (activeTab === 'url') setUrlInput(sample.text);
+                    }}
+                    className="apple-pill-btn px-3 py-1.5 rounded-xl text-xs font-medium hover:border-lens-400/50"
+                  >
+                    {sample.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* TAB 1: SCAM ANALYZER */}
           {activeTab === 'scam' && (
@@ -410,23 +430,23 @@ export const Analyze: React.FC = () => {
                   maxLength={5000}
                   rows={7}
                   placeholder="Paste a suspicious message, email, job offer, payment request or social-media message..."
-                  className="w-full p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-lens-500 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 resize-y min-h-[160px]"
+                  className="w-full p-4.5 rounded-2xl apple-glass-input text-sm text-white placeholder:text-slate-500 focus:outline-none resize-y min-h-[160px] leading-relaxed"
                 />
-                <div className="absolute bottom-3 right-3 text-[11px] font-mono text-slate-400">
+                <div className="absolute bottom-3 right-3 text-[11px] font-mono text-slate-400 px-2 py-0.5 rounded-md bg-black/40">
                   {scamInput.length} / 5000
                 </div>
               </div>
 
               {/* Real-time detected local hints */}
               {scamHints.length > 0 && (
-                <div className="p-3 rounded-xl bg-lens-500/5 border border-lens-500/20 text-xs space-y-1">
-                  <div className="font-semibold text-lens-600 dark:text-lens-400 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Preliminary patterns recognized:</span>
+                <div className="p-3.5 rounded-2xl bg-lens-500/10 border border-lens-500/25 text-xs space-y-1.5 backdrop-blur-md">
+                  <div className="font-semibold text-lens-300 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-lens-400 animate-pulse" />
+                    <span>Preliminary patterns recognized in real time:</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {scamHints.map((hint, idx) => (
-                      <span key={idx} className="px-2 py-0.5 rounded-md bg-lens-500/10 text-lens-700 dark:text-lens-300 font-medium text-[11px]">
+                      <span key={idx} className="px-2.5 py-1 rounded-lg bg-lens-500/15 border border-lens-500/30 text-lens-200 font-medium text-[11px]">
                         {hint}
                       </span>
                     ))}
@@ -445,24 +465,24 @@ export const Analyze: React.FC = () => {
                   onChange={(e) => setNewsInput(e.target.value)}
                   maxLength={8000}
                   rows={8}
-                  placeholder="Paste a headline, claim or article..."
-                  className="w-full p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-lens-500 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 resize-y min-h-[170px]"
+                  placeholder="Paste a headline, claim or article to verify against live Google News & Wikipedia..."
+                  className="w-full p-4.5 rounded-2xl apple-glass-input text-sm text-white placeholder:text-slate-500 focus:outline-none resize-y min-h-[170px] leading-relaxed"
                 />
-                <div className="absolute bottom-3 right-3 text-[11px] font-mono text-slate-400">
+                <div className="absolute bottom-3 right-3 text-[11px] font-mono text-slate-400 px-2 py-0.5 rounded-md bg-black/40">
                   {newsInput.length} / 8000
                 </div>
               </div>
 
               {/* Real-time detected news hints */}
               {newsHints.length > 0 && (
-                <div className="p-3 rounded-xl bg-lens-500/5 border border-lens-500/20 text-xs space-y-1">
-                  <div className="font-semibold text-lens-600 dark:text-lens-400 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5" />
+                <div className="p-3.5 rounded-2xl bg-lens-500/10 border border-lens-500/25 text-xs space-y-1.5 backdrop-blur-md">
+                  <div className="font-semibold text-lens-300 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-lens-400 animate-pulse" />
                     <span>Preliminary claim patterns detected:</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {newsHints.map((hint, idx) => (
-                      <span key={idx} className="px-2 py-0.5 rounded-md bg-lens-500/10 text-lens-700 dark:text-lens-300 font-medium text-[11px]">
+                      <span key={idx} className="px-2.5 py-1 rounded-lg bg-lens-500/15 border border-lens-500/30 text-lens-200 font-medium text-[11px]">
                         {hint}
                       </span>
                     ))}
@@ -481,31 +501,49 @@ export const Analyze: React.FC = () => {
                   value={urlInput}
                   onChange={(e) => setUrlInput(e.target.value)}
                   placeholder="https://example.com/login-verification"
-                  className="w-full p-4 pr-24 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-lens-500 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 font-mono"
+                  className="w-full p-4.5 pr-36 rounded-2xl apple-glass-input text-sm text-white placeholder:text-slate-500 font-mono focus:outline-none"
                 />
-                {urlInput.trim() && (
+                <div className="absolute right-3 flex items-center gap-1.5">
                   <button
                     type="button"
-                    onClick={() => setShowUrlWarningModal(true)}
-                    className="absolute right-3 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors"
-                    title="Open URL with security prompt"
+                    onClick={async () => {
+                      try {
+                        const clip = await navigator.clipboard.readText();
+                        if (clip) setUrlInput(clip.trim());
+                      } catch {
+                        // ignore clipboard error
+                      }
+                    }}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-300 bg-white/[0.08] hover:bg-white/[0.15] border border-white/10 transition-colors"
+                    title="Paste from clipboard"
                   >
-                    <span>Open URL</span>
-                    <ExternalLink className="w-3 h-3" />
+                    <ClipboardPaste className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Paste</span>
                   </button>
-                )}
+                  {urlInput.trim() && (
+                    <button
+                      type="button"
+                      onClick={() => setShowUrlWarningModal(true)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-sky-300 bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/30 transition-colors"
+                      title="Open URL with security prompt"
+                    >
+                      <span>Open</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Real-time detected URL hints */}
               {urlHints.length > 0 && (
-                <div className="p-3 rounded-xl bg-lens-500/5 border border-lens-500/20 text-xs space-y-1">
-                  <div className="font-semibold text-lens-600 dark:text-lens-400 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5" />
+                <div className="p-3.5 rounded-2xl bg-lens-500/10 border border-lens-500/25 text-xs space-y-1.5 backdrop-blur-md">
+                  <div className="font-semibold text-lens-300 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-lens-400 animate-pulse" />
                     <span>Preliminary URL signals:</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {urlHints.map((hint, idx) => (
-                      <span key={idx} className="px-2 py-0.5 rounded-md bg-lens-500/10 text-lens-700 dark:text-lens-300 font-medium text-[11px]">
+                      <span key={idx} className="px-2.5 py-1 rounded-lg bg-lens-500/15 border border-lens-500/30 text-lens-200 font-medium text-[11px]">
                         {hint}
                       </span>
                     ))}
@@ -674,26 +712,26 @@ export const Analyze: React.FC = () => {
           )}
 
           {/* Bottom Action Buttons */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-200/70 dark:border-slate-800">
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-5 border-t border-white/[0.08]">
             <button
               type="button"
               onClick={handleClear}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="apple-pill-btn inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-medium text-slate-300 hover:text-white"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-4 h-4 text-slate-400" />
               <span>Clear</span>
             </button>
 
             <button
               type="button"
               onClick={handleAnalyze}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold bg-lens-600 hover:bg-lens-700 text-white transition-all shadow-md shadow-lens-500/20 hover:scale-[1.01]"
+              className="apple-primary-btn inline-flex items-center gap-2 px-7 py-3 rounded-2xl text-sm font-semibold text-white shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
             >
               <Send className="w-4 h-4" />
               <span>
                 {activeTab === 'screenshot' && selectedFile
-                  ? 'Analyze with TrustLens'
-                  : 'Analyze'}
+                  ? 'Analyze Screenshot'
+                  : 'Analyze with TrustLens'}
               </span>
             </button>
           </div>

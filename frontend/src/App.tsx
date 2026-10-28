@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
@@ -9,28 +9,16 @@ import { Learn } from './pages/Learn';
 import { About } from './pages/About';
 
 export function App() {
-  const [isDark, setIsDark] = useState<boolean>(() => {
-    const saved = localStorage.getItem('trustlens_theme');
-    if (saved) return saved === 'dark';
-    return true; // Dark mode by default
-  });
-
+  // Enforce dark mode as permanent default
   useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('trustlens_theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('trustlens_theme', 'light');
-    }
-  }, [isDark]);
-
-  const toggleTheme = () => setIsDark((prev) => !prev);
+    document.documentElement.classList.add('dark');
+    localStorage.setItem('trustlens_theme', 'dark');
+  }, []);
 
   return (
     <BrowserRouter>
-      <div className="min-h-screen flex flex-col bg-surface-light dark:bg-surface-dark text-slate-900 dark:text-slate-100 selection:bg-lens-500 selection:text-white transition-colors duration-200">
-        <Navbar isDark={isDark} onToggleTheme={toggleTheme} />
+      <div className="min-h-screen flex flex-col bg-[#07090E] text-slate-100 selection:bg-lens-500 selection:text-white">
+        <Navbar />
         
         <main className="flex-1 w-full">
           <Routes>
