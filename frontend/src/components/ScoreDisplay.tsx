@@ -91,12 +91,10 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, riskLevel }) 
 
   const badge = getBadgeConfig();
 
-  // Circular gauge calculations
-  const radius = 68;
-  const circumference = 2 * Math.PI * radius;
-  // Use a 240 degree arc instead of full circle
-  const arcLength = circumference * 0.72;
-  const strokeDashoffset = arcLength - (arcLength * Math.min(100, Math.max(5, score))) / 100;
+  // Circular gauge calculations (Clean semicircle arc)
+  const radius = 75;
+  const arcLength = Math.PI * radius; // ~235.6
+  const strokeDashoffset = arcLength - (arcLength * Math.min(100, Math.max(0, score))) / 100;
 
   return (
     <div className={`relative overflow-hidden flex flex-col items-center justify-center text-center p-6 sm:p-8 rounded-3xl bg-slate-900/60 backdrop-blur-2xl border border-white/[0.08] ${badge.glow} transition-all duration-300`}>
@@ -136,10 +134,10 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, riskLevel }) 
 
       {/* Radial Gauge Arc Display */}
       <div className="relative my-2 flex items-center justify-center">
-        <svg width="190" height="150" viewBox="0 0 190 150" className="overflow-visible">
+        <svg width="200" height="115" viewBox="0 0 200 115" className="overflow-visible">
           <defs>
             <linearGradient id="emeraldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#10b981" />
+              <stop offset="0%" stopColor="#059669" />
               <stop offset="100%" stopColor="#34d399" />
             </linearGradient>
             <linearGradient id="skyGrad" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -158,37 +156,37 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, riskLevel }) 
 
           {/* Background Track */}
           <path
-            d="M 25 125 A 68 68 0 1 1 165 125"
+            d="M 25 105 A 75 75 0 0 1 175 105"
             fill="none"
             stroke="rgba(255, 255, 255, 0.08)"
-            strokeWidth="12"
+            strokeWidth="11"
             strokeLinecap="round"
           />
 
           {/* Animated Value Arc */}
           <motion.path
-            d="M 25 125 A 68 68 0 1 1 165 125"
+            d="M 25 105 A 75 75 0 0 1 175 105"
             fill="none"
             stroke={`url(#${badge.gradientId})`}
-            strokeWidth="12"
+            strokeWidth="11"
             strokeLinecap="round"
             strokeDasharray={arcLength}
             initial={{ strokeDashoffset: arcLength }}
             animate={{ strokeDashoffset }}
-            transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 1.0, ease: [0.16, 1, 0.3, 1] }}
             style={{
-              filter: `drop-shadow(0 0 6px ${badge.strokeColor}88)`
+              filter: `drop-shadow(0 0 8px ${badge.strokeColor}66)`
             }}
           />
         </svg>
 
         {/* Center Numbers */}
-        <div className="absolute top-[38px] flex flex-col items-center">
+        <div className="absolute top-[36px] flex flex-col items-center">
           <div className="flex items-baseline gap-1">
-            <span className={`text-5xl font-black tracking-tight ${badge.textColor}`}>
+            <span className="text-5xl font-black tracking-tight text-white drop-shadow-md">
               {animatedScore}
             </span>
-            <span className="text-xl font-medium text-slate-500">
+            <span className="text-lg font-semibold text-slate-400">
               /100
             </span>
           </div>

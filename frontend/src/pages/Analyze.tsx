@@ -106,7 +106,7 @@ export const Analyze: React.FC = () => {
     };
   }, [stopCameraStream]);
 
-  // Update URL param when tab changes
+  // Update URL param when tab changes & reset active test state
   const handleTabChange = (tab: AnalysisType) => {
     if (isCameraOpen) {
       stopCameraStream();
@@ -115,6 +115,8 @@ export const Analyze: React.FC = () => {
     setActiveTab(tab);
     setSearchParams({ mode: tab });
     setErrorMsg(null);
+    setResult(null); // Clear previous section's result so fresh tab inputs display immediately!
+    setIsLoading(false);
   };
 
   // Helper for processing files from input or drag-and-drop
