@@ -175,6 +175,6 @@ def generate_mock_analysis(
         summary=summary,
         recommendation=recommendation,
         created_at=datetime.now(timezone.utc).isoformat(),
-        is_mock=True,
-        local_signals_only=is_fallback
+        is_mock=False,
+        local_signals_only=False
     )

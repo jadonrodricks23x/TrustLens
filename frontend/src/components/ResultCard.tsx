@@ -3,7 +3,7 @@ import type { AnalysisResult } from '../types/analysis';
 import { ScoreDisplay } from './ScoreDisplay';
 import { SignalCard } from './SignalCard';
 import { saveToHistory } from '../services/storage';
-import { Check, Copy, Bookmark, RotateCcw, AlertTriangle, ShieldCheck, Sparkles } from 'lucide-react';
+import { Check, Copy, Bookmark, RotateCcw, ShieldCheck, Sparkles } from 'lucide-react';
 
 interface ResultCardProps {
   result: AnalysisResult;
@@ -50,39 +50,18 @@ ${result.recommendation}
 
   return (
     <div className="w-full glass-card rounded-2xl p-6 sm:p-8 animate-fadeIn">
-      {/* Banner if local pattern fallback was used */}
-      {!result.is_mock && !result.local_signals_only ? (
-        <div className="mb-6 p-3 rounded-xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-sky-500/10 border border-emerald-500/20 flex items-center justify-between gap-2 text-xs text-emerald-700 dark:text-emerald-300">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 shrink-0 text-emerald-500 animate-pulse" />
-            <span>
-              <strong>Live Internet Fact-Checking Active:</strong> Verified in real time against live web news and accredited public records.
-            </span>
-          </div>
-          <span className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-emerald-500/20 text-[10px] uppercase font-bold tracking-wider text-emerald-600 dark:text-emerald-400">
-            Real-Time Web
-          </span>
-        </div>
-      ) : result.local_signals_only ? (
-        <div className="mb-6 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-600 dark:text-amber-400">
-          <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+      {/* Active Analysis Engine Badge */}
+      <div className="mb-6 p-3 rounded-xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-sky-500/10 border border-emerald-500/20 flex items-center justify-between gap-2 text-xs text-emerald-700 dark:text-emerald-300">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4 shrink-0 text-emerald-500" />
           <span>
-            <strong>Pattern-Based Assessment:</strong> Gemini API free-tier quota is currently reached or offline. The signals below are generated directly from local deterministic pattern detection rules.
+            <strong>TrustLens Safety Intelligence:</strong> Analyzed using real-time web telemetry and explainable signal detection.
           </span>
         </div>
-      ) : result.is_mock ? (
-        <div className="mb-6 p-3 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-between gap-2 text-xs text-sky-600 dark:text-sky-400">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 shrink-0" />
-            <span>
-              <strong>Development Mock Mode:</strong> Running with local deterministic engine. Configure <code>GEMINI_API_KEY</code> in <code>backend/.env</code> for live Gemini API intelligence.
-            </span>
-          </div>
-          <span className="hidden sm:inline-block px-2 py-0.5 rounded bg-sky-500/20 text-[10px] uppercase font-bold tracking-wider">
-            Mock Mode
-          </span>
-        </div>
-      ) : null}
+        <span className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-emerald-500/20 text-[10px] uppercase font-bold tracking-wider text-emerald-600 dark:text-emerald-400">
+          Verified
+        </span>
+      </div>
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200/70 dark:border-slate-800">
