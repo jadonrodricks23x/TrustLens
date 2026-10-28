@@ -14,6 +14,7 @@ from routes.scam import router as scam_router
 from routes.news import router as news_router
 from routes.url import router as url_router
 from routes.screenshot import router as screenshot_router
+from routes.settings import router as settings_router
 
 app = FastAPI(
     title="TrustLens AI API",
@@ -79,6 +80,7 @@ app.include_router(scam_router)
 app.include_router(news_router)
 app.include_router(url_router)
 app.include_router(screenshot_router)
+app.include_router(settings_router)
 
 if __name__ == "__main__":
     import uvicorn
