@@ -27,6 +27,8 @@ class AnalysisResult(BaseModel):
     created_at: str
     is_mock: bool = False
     local_signals_only: bool = False
+    extracted_text: Optional[str] = None
+    ocr_confidence: Optional[int] = None
 
     @model_validator(mode="before")
     @classmethod

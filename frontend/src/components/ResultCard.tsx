@@ -3,7 +3,7 @@ import type { AnalysisResult } from '../types/analysis';
 import { ScoreDisplay } from './ScoreDisplay';
 import { SignalCard } from './SignalCard';
 import { saveToHistory } from '../services/storage';
-import { Check, Copy, Bookmark, RotateCcw, ShieldCheck, Sparkles, HelpCircle } from 'lucide-react';
+import { Check, Copy, Bookmark, RotateCcw, ShieldCheck, Sparkles, HelpCircle, FileText } from 'lucide-react';
 
 interface ResultCardProps {
   result: AnalysisResult;
@@ -91,6 +91,26 @@ ${result.recommendation}
       <div className="py-2">
         <ScoreDisplay score={displayScore} riskLevel={result.risk_level} />
       </div>
+
+      {/* Extracted Text From Image (OCR) */}
+      {result.extracted_text && (
+        <div className="p-4.5 rounded-2xl bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] space-y-2.5">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+              <FileText className="w-3.5 h-3.5 text-lens-400" />
+              <span>Words Extracted From Screenshot</span>
+            </h4>
+            {result.ocr_confidence && (
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-lens-500/15 text-lens-300 border border-lens-500/30">
+                {result.ocr_confidence}% OCR Accuracy
+              </span>
+            )}
+          </div>
+          <div className="p-3 rounded-xl bg-black/40 border border-white/[0.08] text-xs font-mono text-slate-200 max-h-36 overflow-y-auto whitespace-pre-wrap leading-relaxed select-text">
+            {result.extracted_text}
+          </div>
+        </div>
+      )}
 
       {/* What We Detected (Signals) */}
       <div className="space-y-3">

@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Request, UploadFile, File, HTTPException, status
+from typing import Optional
+from fastapi import APIRouter, Request, UploadFile, File, Form, HTTPException, status
 from models.schemas import AnalysisResult
 from services.ocr_service import validate_image_upload, extract_text_from_image_bytes
 from utils.scam_analyzer import analyze_scam_locally
@@ -11,7 +12,8 @@ router = APIRouter(prefix="/api/analyze", tags=["Screenshot Analyzer"])
 @router.post("/screenshot", response_model=AnalysisResult)
 async def analyze_screenshot(
     request: Request,
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    extracted_text: Optional[str] = Form(None)
 ):
     rate_limiter.check(request)
 
@@ -30,13 +32,16 @@ async def analyze_screenshot(
         status_code = status.HTTP_413_REQUEST_ENTITY_TOO_LARGE if "exceeds" in err else status.HTTP_400_BAD_REQUEST
         raise HTTPException(status_code=status_code, detail=err)
 
-    # 1. Deterministic OCR extraction attempt in memory
-    extracted_text, used_ocr = extract_text_from_image_bytes(contents)
+    # 1. OCR text content from client or local memory attempt
+    text_to_analyze = (extracted_text or "").strip()
+    if not text_to_analyze:
+        extracted_from_bytes, _ = extract_text_from_image_bytes(contents)
+        text_to_analyze = extracted_from_bytes
 
     combined_signals = []
-    if extracted_text and len(extracted_text.strip()) > 8:
-        scam_signals = analyze_scam_locally(extracted_text)
-        news_signals = analyze_news_locally(extracted_text)
+    if text_to_analyze and len(text_to_analyze) > 8:
+        scam_signals = analyze_scam_locally(text_to_analyze)
+        news_signals = analyze_news_locally(text_to_analyze)
         combined_signals = scam_signals + [s for s in news_signals if s["name"] not in [x["name"] for x in scam_signals]]
     else:
         combined_signals = [{
@@ -47,11 +52,14 @@ async def analyze_screenshot(
 
     # 2. Analyze via centralized Gemini service with multimodal image payload
     result = await analyze_with_gemini(
-        content=extracted_text if extracted_text else f"Screenshot image: {file.filename or 'image'}",
+        content=text_to_analyze if text_to_analyze else f"Screenshot image: {file.filename or 'image'}",
         analysis_type="screenshot",
         local_signals=combined_signals[:5],
         image_bytes=contents,
         mime_type=content_type
     )
+
+    if text_to_analyze:
+        result.extracted_text = text_to_analyze
 
     return result

@@ -24,6 +24,8 @@ export interface AnalysisResult {
   created_at: string;
   is_mock?: boolean;
   local_signals_only?: boolean;
+  extracted_text?: string;
+  ocr_confidence?: number;
 }
 
 export interface QuizQuestion {

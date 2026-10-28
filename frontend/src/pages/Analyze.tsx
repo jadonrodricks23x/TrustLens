@@ -10,11 +10,12 @@ import { validateMessageLength, isValidUrl, validateImageFile } from '../utils/v
 import { detectLocalScamHints } from '../utils/scamSignals';
 import { detectLocalNewsHints } from '../utils/newsSignals';
 import { detectLocalUrlHints } from '../utils/urlSignals';
+import { extractTextFromImage } from '../services/clientOcr';
 import { 
   Send, Trash2, Upload, ExternalLink, AlertTriangle, 
   Sparkles, Image as ImageIcon, Camera, X, RefreshCw, 
   Check, FlipHorizontal, AlertCircle, ClipboardPaste,
-  Maximize2
+  Maximize2, FileText, Scan
 } from 'lucide-react';
 
 const SAMPLE_PRESETS: Record<AnalysisType, { label: string; text: string }[]> = {
@@ -69,6 +70,13 @@ export const Analyze: React.FC = () => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
+  // Client-Side OCR Text Recognition State
+  const [isOcrProcessing, setIsOcrProcessing] = useState(false);
+  const [ocrStatus, setOcrStatus] = useState<string>('');
+  const [ocrProgress, setOcrProgress] = useState<number>(0);
+  const [extractedOcrText, setExtractedOcrText] = useState<string>('');
+  const [ocrConfidence, setOcrConfidence] = useState<number | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mobileCameraInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -119,8 +127,38 @@ export const Analyze: React.FC = () => {
     setSelectedFile(file);
     setImageSource(source);
     setErrorMsg(null);
+    setExtractedOcrText('');
+    setOcrConfidence(null);
+
     const reader = new FileReader();
-    reader.onload = () => setFilePreview(reader.result as string);
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      setFilePreview(dataUrl);
+
+      // Trigger client-side on-device OCR extraction
+      setIsOcrProcessing(true);
+      setOcrStatus('Scanning image for text...');
+      setOcrProgress(15);
+
+      try {
+        const ocrResult = await extractTextFromImage(dataUrl, (p) => {
+          setOcrStatus(p.status);
+          setOcrProgress(p.progress);
+        });
+
+        if (ocrResult.hasText) {
+          setExtractedOcrText(ocrResult.text);
+          setOcrConfidence(ocrResult.confidence);
+        } else {
+          setExtractedOcrText('');
+          setOcrConfidence(null);
+        }
+      } catch (err) {
+        console.warn('OCR extraction warning:', err);
+      } finally {
+        setIsOcrProcessing(false);
+      }
+    };
     reader.readAsDataURL(file);
   };
 
@@ -313,7 +351,27 @@ export const Analyze: React.FC = () => {
       setFilePreview(capturedTempPreview);
       setImageSource('camera');
       setErrorMsg(null);
+      setExtractedOcrText('');
+      setOcrConfidence(null);
       handleCloseCamera();
+
+      // Trigger OCR on captured camera snapshot
+      setIsOcrProcessing(true);
+      setOcrStatus('Scanning photo for text...');
+      setOcrProgress(15);
+      extractTextFromImage(capturedTempPreview, (p) => {
+        setOcrStatus(p.status);
+        setOcrProgress(p.progress);
+      }).then((ocrResult) => {
+        if (ocrResult.hasText) {
+          setExtractedOcrText(ocrResult.text);
+          setOcrConfidence(ocrResult.confidence);
+        }
+      }).catch((err) => {
+        console.warn('Camera OCR warning:', err);
+      }).finally(() => {
+        setIsOcrProcessing(false);
+      });
     }
   };
 
@@ -322,6 +380,9 @@ export const Analyze: React.FC = () => {
     setSelectedFile(null);
     setFilePreview(null);
     setImageSource(null);
+    setExtractedOcrText('');
+    setOcrConfidence(null);
+    setIsOcrProcessing(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (mobileCameraInputRef.current) mobileCameraInputRef.current.value = '';
   };
@@ -375,7 +436,26 @@ export const Analyze: React.FC = () => {
           return;
         }
         setIsLoading(true);
-        const res = await analyzeScreenshot(selectedFile);
+
+        let textToSend = extractedOcrText;
+        let confToSend = ocrConfidence || undefined;
+
+        // If OCR is not completed yet, run recognition before submitting
+        if (!textToSend && filePreview) {
+          try {
+            const ocrResult = await extractTextFromImage(filePreview);
+            if (ocrResult.hasText) {
+              textToSend = ocrResult.text;
+              confToSend = ocrResult.confidence;
+              setExtractedOcrText(textToSend);
+              setOcrConfidence(confToSend);
+            }
+          } catch (e) {
+            console.warn('OCR on-demand error:', e);
+          }
+        }
+
+        const res = await analyzeScreenshot(selectedFile, textToSend, confToSend);
         setResult(res);
       }
     } catch (err: unknown) {
@@ -812,6 +892,46 @@ export const Analyze: React.FC = () => {
                       <span>Inspect Zoom</span>
                     </div>
                   </div>
+
+                  {/* OCR Recognition Feedback & Extracted Text Preview */}
+                  {isOcrProcessing ? (
+                    <div className="p-3.5 rounded-2xl bg-sky-500/10 border border-sky-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-sky-200 backdrop-blur-md">
+                      <div className="flex items-center gap-2">
+                        <Scan className="w-4 h-4 text-sky-400 animate-spin" />
+                        <span className="font-medium">{ocrStatus || 'Scanning image text with on-device OCR...'}</span>
+                      </div>
+                      <div className="w-full sm:w-36 bg-black/40 rounded-full h-2 overflow-hidden border border-white/10">
+                        <div 
+                          className="bg-gradient-to-r from-sky-400 to-lens-400 h-full transition-all duration-300"
+                          style={{ width: `${Math.max(15, ocrProgress)}%` }}
+                        />
+                      </div>
+                    </div>
+                  ) : extractedOcrText ? (
+                    <div className="p-3.5 rounded-2xl bg-white/[0.04] backdrop-blur-md border border-white/10 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-emerald-300">
+                          <FileText className="w-4 h-4 text-emerald-400" />
+                          <span>Extracted Words ({extractedOcrText.split(/\s+/).filter(Boolean).length} words detected)</span>
+                        </div>
+                        {ocrConfidence && (
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                            {ocrConfidence}% OCR Accuracy
+                          </span>
+                        )}
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-black/40 border border-white/10 text-xs font-mono text-slate-200 max-h-24 overflow-y-auto whitespace-pre-wrap leading-relaxed select-text">
+                        {extractedOcrText}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.06] text-[11px] text-slate-400 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <FileText className="w-3.5 h-3.5 text-slate-500" />
+                        <span>OCR engine ready • Text in image will be automatically read and analyzed</span>
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
