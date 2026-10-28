@@ -124,13 +124,6 @@ export const Analyze: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  // Image preview handler for file selection
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      processSelectedFile(e.target.files[0], 'upload');
-    }
-  };
-
   // Drag and drop handlers
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -160,6 +153,24 @@ export const Analyze: React.FC = () => {
       else if (activeTab === 'url') setUrlInput(text.trim());
     } catch {
       // ignore clipboard permission error
+    }
+  };
+
+  // Detect if current client is a mobile device (iPhone, iPad, Android)
+  const isMobile = () => {
+    if (typeof window === 'undefined') return false;
+    return (
+      /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+      ('ontouchstart' in window && navigator.maxTouchPoints > 0)
+    );
+  };
+
+  // Open native camera directly on iPhone 12/15, or interactive WebRTC viewfinder on desktop
+  const handleOpenPhotoCapture = () => {
+    if (isMobile()) {
+      mobileCameraInputRef.current?.click();
+    } else {
+      startCamera('environment');
     }
   };
 
@@ -400,14 +411,14 @@ export const Analyze: React.FC = () => {
   const urlHints = urlInput.length > 5 ? detectLocalUrlHints(urlInput) : [];
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12 space-y-8">
+    <div className="max-w-4xl mx-auto px-3.5 sm:px-6 py-6 sm:py-12 space-y-6 sm:space-y-8">
       {/* Title Header */}
       <div className="text-center space-y-2">
-        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+        <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white">
           What do you want to check?
         </h1>
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          Select a category, paste the content or upload an image, and inspect detected signals.
+        <p className="text-xs sm:text-sm text-slate-300 max-w-md mx-auto">
+          Select a category, paste text, link, or snap a photo with your camera.
         </p>
       </div>
 
@@ -432,7 +443,7 @@ export const Analyze: React.FC = () => {
           onReset={() => setErrorMsg(null)}
         />
       ) : (
-        <div className="apple-glass-card rounded-3xl p-6 sm:p-8 space-y-6 border border-white/[0.1] shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+        <div className="apple-glass-card rounded-3xl p-4 sm:p-8 space-y-5 sm:space-y-6 border border-white/[0.1] shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
           {/* Quick Sample Presets */}
           {activeTab !== 'screenshot' && (
             <div className="space-y-2 pb-1">
@@ -663,14 +674,14 @@ export const Analyze: React.FC = () => {
                         <ImageIcon className="w-3.5 h-3.5" />
                         <span>Choose File</span>
                       </div>
-                      <span className="text-[10px] text-slate-400 mt-2 font-mono">Max size: 5 MB</span>
+                      <span className="text-[10px] text-slate-400 mt-2 font-mono">Gallery or files (up to 20 MB)</span>
                     </button>
 
                     {/* Option 2: Take Picture */}
                     <button
                       type="button"
-                      onClick={() => startCamera('environment')}
-                      className="glass-card-hover rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center text-center group cursor-pointer border-2 border-dashed border-white/15 hover:border-sky-400/70 transition-all"
+                      onClick={handleOpenPhotoCapture}
+                      className="glass-card-hover rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center text-center group cursor-pointer border-2 border-dashed border-white/15 hover:border-sky-400/70 transition-all active:scale-[0.98]"
                       aria-label="Take picture using device camera"
                     >
                       <div className="w-14 h-14 rounded-2xl bg-sky-500/15 text-sky-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-md">
@@ -680,33 +691,41 @@ export const Analyze: React.FC = () => {
                         Take Picture
                       </h4>
                       <p className="text-xs text-slate-300 max-w-xs leading-relaxed">
-                        Use your device camera to snap a photo of a screen, physical letter, or receipt.
+                        Snap a photo instantly using your iPhone or device camera.
                       </p>
                       <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/10 text-white group-hover:bg-sky-500 transition-colors">
                         <Camera className="w-3.5 h-3.5" />
                         <span>Open Camera</span>
                       </div>
-                      <span className="text-[10px] text-slate-400 mt-2 font-mono">Rear camera preferred</span>
+                      <span className="text-[10px] text-slate-400 mt-2 font-mono">Camera shutter / sensor</span>
                     </button>
                   </div>
 
-                  {/* Hidden file input for standard file upload */}
+                  {/* Hidden file input for standard gallery upload */}
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/png,image/jpeg,image/jpg,image/webp"
-                    onChange={handleFileChange}
+                    accept="image/*,image/png,image/jpeg,image/webp,image/heic,image/heif"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        processSelectedFile(e.target.files[0], 'upload');
+                      }
+                    }}
                     className="hidden"
                     aria-hidden="true"
                   />
 
-                  {/* Hidden mobile camera fallback input if needed */}
+                  {/* Hidden mobile camera capture input for iPhone / Android */}
                   <input
                     ref={mobileCameraInputRef}
                     type="file"
                     accept="image/*"
                     capture="environment"
-                    onChange={handleFileChange}
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        processSelectedFile(e.target.files[0], 'camera');
+                      }
+                    }}
                     className="hidden"
                     aria-hidden="true"
                   />
@@ -719,17 +738,17 @@ export const Analyze: React.FC = () => {
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-2">
                         {imageSource === 'camera' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
-                            <Camera className="w-3 h-3" />
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-sky-500/15 text-sky-400 border border-sky-500/30">
+                            <Camera className="w-3.5 h-3.5" />
                             <span>Camera Photo</span>
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-lens-500/10 text-lens-600 dark:text-lens-400 border border-lens-500/20">
-                            <ImageIcon className="w-3 h-3" />
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-lens-500/15 text-lens-400 border border-lens-500/30">
+                            <ImageIcon className="w-3.5 h-3.5" />
                             <span>Uploaded Image</span>
                           </span>
                         )}
-                        <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate max-w-xs">
+                        <span className="text-xs font-semibold text-white truncate max-w-xs">
                           {selectedFile?.name}
                         </span>
                       </div>
@@ -745,8 +764,8 @@ export const Analyze: React.FC = () => {
                       {imageSource === 'camera' ? (
                         <button
                           type="button"
-                          onClick={() => startCamera(cameraFacingMode)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors"
+                          onClick={handleOpenPhotoCapture}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-200 bg-white/10 hover:bg-white/20 transition-colors"
                           aria-label="Retake camera photo"
                         >
                           <RefreshCw className="w-3.5 h-3.5" />
@@ -756,7 +775,7 @@ export const Analyze: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-200 bg-white/10 hover:bg-white/20 transition-colors"
                           aria-label="Replace selected file"
                         >
                           <Upload className="w-3.5 h-3.5" />
@@ -799,11 +818,11 @@ export const Analyze: React.FC = () => {
           )}
 
           {/* Bottom Action Buttons */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-5 border-t border-white/[0.08]">
+          <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3 pt-5 border-t border-white/[0.08]">
             <button
               type="button"
               onClick={handleClear}
-              className="apple-pill-btn inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-medium text-slate-300 hover:text-white"
+              className="apple-pill-btn w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-sm font-medium text-slate-300 hover:text-white transition-all"
             >
               <Trash2 className="w-4 h-4 text-slate-400" />
               <span>Clear</span>
@@ -812,7 +831,7 @@ export const Analyze: React.FC = () => {
             <button
               type="button"
               onClick={handleAnalyze}
-              className="apple-primary-btn inline-flex items-center gap-2 px-7 py-3 rounded-2xl text-sm font-semibold text-white shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+              className="apple-primary-btn w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl text-sm font-semibold text-white shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
             >
               <Send className="w-4 h-4" />
               <span>

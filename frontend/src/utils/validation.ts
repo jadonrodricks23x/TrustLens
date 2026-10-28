@@ -23,13 +23,25 @@ export function validateMessageLength(content: string, max: number = 5000): { va
 }
 
 export function validateImageFile(file: File): { valid: boolean; error?: string } {
-  const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
-  if (!validTypes.includes(file.type.toLowerCase())) {
-    return { valid: false, error: 'Unsupported format. Please upload PNG, JPG, JPEG, or WEBP.' };
+  const fileType = (file.type || '').toLowerCase();
+  const fileName = (file.name || '').toLowerCase();
+  
+  const validMimes = [
+    'image/png', 'image/jpeg', 'image/jpg', 'image/webp',
+    'image/heic', 'image/heif', 'image/gif', 'image/bmp'
+  ];
+  
+  const isImageMime = validMimes.includes(fileType) || fileType.startsWith('image/');
+  const isImageExt = /\.(png|jpe?g|webp|heic|heif|gif|bmp)$/i.test(fileName);
+
+  if (!isImageMime && !isImageExt) {
+    return { valid: false, error: 'Unsupported format. Please upload an image (PNG, JPG, HEIC, or WEBP).' };
   }
-  const maxBytes = 5 * 1024 * 1024; // 5MB
+  
+  // High-res iPhone 12/15 photos can be 5-10MB; permit up to 20MB on frontend
+  const maxBytes = 20 * 1024 * 1024; // 20MB
   if (file.size > maxBytes) {
-    return { valid: false, error: `Image size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds 5MB limit.` };
+    return { valid: false, error: `Image size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds 20MB limit.` };
   }
   return { valid: true };
 }

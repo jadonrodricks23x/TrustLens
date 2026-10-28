@@ -49,7 +49,7 @@ ${result.recommendation}
   };
 
   return (
-    <div className="w-full rounded-3xl p-6 sm:p-8 apple-glass-card border border-white/[0.1] shadow-[0_20px_50px_rgba(0,0,0,0.5)] animate-fadeIn space-y-6">
+    <div className="w-full rounded-3xl p-4.5 sm:p-8 apple-glass-card border border-white/[0.1] shadow-[0_20px_50px_rgba(0,0,0,0.5)] animate-fadeIn space-y-6">
       {/* Active Analysis Engine Badge */}
       <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-sky-500/10 border border-emerald-500/20 flex items-center justify-between gap-3 text-xs text-emerald-300">
         <div className="flex items-center gap-2.5">
