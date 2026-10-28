@@ -51,11 +51,23 @@ ${result.recommendation}
   return (
     <div className="w-full glass-card rounded-2xl p-6 sm:p-8 animate-fadeIn">
       {/* Banner if local pattern fallback was used */}
-      {result.local_signals_only ? (
+      {!result.is_mock && !result.local_signals_only ? (
+        <div className="mb-6 p-3 rounded-xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-sky-500/10 border border-emerald-500/20 flex items-center justify-between gap-2 text-xs text-emerald-700 dark:text-emerald-300">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 shrink-0 text-emerald-500 animate-pulse" />
+            <span>
+              <strong>Live Gemini Search Active:</strong> Verified in real time against current web facts with Google Search grounding.
+            </span>
+          </div>
+          <span className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-emerald-500/20 text-[10px] uppercase font-bold tracking-wider text-emerald-600 dark:text-emerald-400">
+            Web Grounded
+          </span>
+        </div>
+      ) : result.local_signals_only ? (
         <div className="mb-6 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-600 dark:text-amber-400">
           <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>
-            <strong>Pattern-Based Assessment:</strong> Gemini API was unavailable or offline. The signals below are generated directly from local deterministic pattern detection rules.
+            <strong>Pattern-Based Assessment:</strong> Gemini API free-tier quota is currently reached or offline. The signals below are generated directly from local deterministic pattern detection rules.
           </span>
         </div>
       ) : result.is_mock ? (

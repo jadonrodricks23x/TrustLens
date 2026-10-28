@@ -9,7 +9,22 @@ def analyze_news_locally(content: str) -> List[Dict[str, Any]]:
     signals = []
     text = content.lower()
 
-    # 1. Excessive Punctuation / All-Caps
+    # 1. Unsubstantiated Medical & Miracle Cure Claims
+    medical_patterns = [
+        r'cure[s]?\s+(for\s+)?(cancer|diabetes|hiv|aids|alzheimer|covid|heart disease|aging)',
+        r'eliminate[s]?\s+(cancer|diabetes|hiv|aids|disease)',
+        r'cure[s]?\s+in\s+\d+\s*(hours?|days?|mins?|minutes?)',
+        r'miracle\s+(cure|drug|drink|juice|herb|remedy)',
+        r'doctors?\s+(hate|fear|won\'t tell|banned)'
+    ]
+    if any(re.search(p, text) for p in medical_patterns):
+        signals.append({
+            "name": "Unverified Medical Cure Claim",
+            "severity": "high",
+            "reason": "Claims rapid cure or disease elimination without clinical trial citations or verified health regulatory approval."
+        })
+
+    # 2. Excessive Punctuation / All-Caps
     punct_count = len(re.findall(r'[!?]{2,}', content))
     caps_words = [w for w in content.split() if len(w) > 3 and w.isupper() and w.isalpha()]
     if punct_count > 0 or len(caps_words) >= 2:
@@ -19,11 +34,12 @@ def analyze_news_locally(content: str) -> List[Dict[str, Any]]:
             "reason": "Uses dramatic exclamation marks or capital letters to artificially heighten emotional intensity and urgency."
         })
 
-    # 2. Sensationalist & Tabloid Wording
+    # 3. Sensationalist & Tabloid Wording
     sensational_patterns = [
         r'miracle cure', r'shocking truth', r'what they don\'t want you to know',
         r'bombshell', r'mind-blowing', r'unbelievable', r'breakthrough secret',
-        r'they are hiding', r'exposed', r'jaw-dropping', r'conspiracy'
+        r'they are hiding', r'exposed', r'jaw-dropping', r'conspiracy',
+        r'media won\'t tell you', r'censored by government'
     ]
     if any(re.search(p, text) for p in sensational_patterns):
         signals.append({
@@ -32,7 +48,7 @@ def analyze_news_locally(content: str) -> List[Dict[str, Any]]:
             "reason": "Relies on sensational buzzwords designed to trigger curiosity rather than substantiated factual reporting."
         })
 
-    # 3. Clickbait Patterns
+    # 4. Clickbait Patterns
     clickbait_patterns = [
         r'you won\'t believe', r'this one simple trick', r'number \d+ will shock you',
         r'see what happened', r'revealed', r'will blow your mind', r'the secret reason'
@@ -44,7 +60,7 @@ def analyze_news_locally(content: str) -> List[Dict[str, Any]]:
             "reason": "Employs an information gap hook to manipulate clicks without revealing substantive verifiable context up front."
         })
 
-    # 4. Absolute / Unqualified Claims
+    # 5. Absolute / Unqualified Claims
     absolute_patterns = [
         r'guarantees?', r'100% proven', r'cure for all', r'never fails',
         r'undeniable proof', r'completely eliminates', r'every single person'
@@ -56,7 +72,17 @@ def analyze_news_locally(content: str) -> List[Dict[str, Any]]:
             "reason": "Asserts definitive guarantees or total certainty in domains where scientific or journalistic nuances always exist."
         })
 
-    # 5. Emotional Manipulation & Outrage
+    # 6. Death / Obituary Claim Lacking Source
+    death_pattern = r'\b(is dead|died|passed away|found dead|killed in action)\b'
+    has_specific_source = bool(re.search(r'(reuters|ap news|bbc|hindustan times|indian express|al jazeera|who|cdc|official|police)', text))
+    if re.search(death_pattern, text) and not has_specific_source:
+        signals.append({
+            "name": "Uncorroborated Death Claim",
+            "severity": "medium",
+            "reason": "Claims a death or fatal event without citing official family confirmation, police reports, or major news agencies."
+        })
+
+    # 7. Emotional Manipulation & Outrage
     emotional_patterns = [
         r'terrifying', r'horrific', r'panic', r'disaster', r'heartbreaking',
         r'outrageous', r'furious', r'pure evil', r'devastating'
@@ -68,27 +94,13 @@ def analyze_news_locally(content: str) -> List[Dict[str, Any]]:
             "reason": "Uses visceral emotional phrasing that appeals to fear, outrage, or panic rather than rational inquiry."
         })
 
-    # 6. Anonymous / Vague Sourcing
-    vague_source_patterns = [
-        r'scientists have discovered', r'doctors hate (him|her|this)',
-        r'sources claim', r'insiders say', r'a secret study', r'experts confirm'
-    ]
-    has_vague_sources = any(re.search(p, text) for p in vague_source_patterns)
-    has_specific_source = bool(re.search(r'(published in|doi\.org|reuters|ap news|bbc|who|cdc|nature journal|lancet|university of)', text))
-    
-    if has_vague_sources and not has_specific_source:
-        signals.append({
-            "name": "Unverifiable Attribution",
-            "severity": "medium",
-            "reason": "Attributes broad claims to unspecified scientists or anonymous sources without citing peer-reviewed studies or publications."
-        })
-
-    # 7. Missing Verifiable Source Context
+    # 8. Missing Verifiable Source Context
     if len(content.split()) < 40 and not any(k in text for k in ['http', 'according to', 'published', 'reported by']):
-        signals.append({
-            "name": "Missing Source Context",
-            "severity": "low",
-            "reason": "Lacks direct citations, timestamps, or corroborating links needed to evaluate authenticity."
-        })
+        if not any(s["name"] == "Uncorroborated Death Claim" for s in signals):
+            signals.append({
+                "name": "Missing Source Context",
+                "severity": "low",
+                "reason": "Lacks direct citations, timestamps, or corroborating links needed to evaluate authenticity."
+            })
 
     return signals[:5]
