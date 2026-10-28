@@ -56,11 +56,11 @@ ${result.recommendation}
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 shrink-0 text-emerald-500 animate-pulse" />
             <span>
-              <strong>Live Gemini Search Active:</strong> Verified in real time against current web facts with Google Search grounding.
+              <strong>Live Internet Fact-Checking Active:</strong> Verified in real time against live web news and accredited public records.
             </span>
           </div>
           <span className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-emerald-500/20 text-[10px] uppercase font-bold tracking-wider text-emerald-600 dark:text-emerald-400">
-            Web Grounded
+            Real-Time Web
           </span>
         </div>
       ) : result.local_signals_only ? (
