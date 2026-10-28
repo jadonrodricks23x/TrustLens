@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { AnalysisType, AnalysisResult } from '../types/analysis';
 import { AnalyzerTabs } from '../components/AnalyzerTabs';
@@ -12,7 +12,8 @@ import { detectLocalNewsHints } from '../utils/newsSignals';
 import { detectLocalUrlHints } from '../utils/urlSignals';
 import { 
   Send, Trash2, Upload, ExternalLink, AlertTriangle, 
-  Sparkles, Image as ImageIcon, X 
+  Sparkles, Image as ImageIcon, Camera, X, RefreshCw, 
+  Check, FlipHorizontal, AlertCircle 
 } from 'lucide-react';
 
 const SAMPLES = {
@@ -35,6 +36,15 @@ export const Analyze: React.FC = () => {
   const [urlInput, setUrlInput] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [imageSource, setImageSource] = useState<'upload' | 'camera' | null>(null);
+
+  // Camera State
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [cameraLoading, setCameraLoading] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [cameraFacingMode, setCameraFacingMode] = useState<'environment' | 'user'>('environment');
+  const [capturedTempPreview, setCapturedTempPreview] = useState<string | null>(null);
+  const [capturedTempFile, setCapturedTempFile] = useState<File | null>(null);
 
   // States
   const [isLoading, setIsLoading] = useState(false);
@@ -43,15 +53,46 @@ export const Analyze: React.FC = () => {
   const [showUrlWarningModal, setShowUrlWarningModal] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mobileCameraInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  // Stop camera tracks cleanly
+  const stopCameraStream = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => {
+        try {
+          track.stop();
+        } catch (e) {
+          console.error('Error stopping camera track', e);
+        }
+      });
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  }, []);
+
+  // Cleanup on unmount or tab switch
+  useEffect(() => {
+    return () => {
+      stopCameraStream();
+    };
+  }, [stopCameraStream]);
 
   // Update URL param when tab changes
   const handleTabChange = (tab: AnalysisType) => {
+    if (isCameraOpen) {
+      stopCameraStream();
+      setIsCameraOpen(false);
+    }
     setActiveTab(tab);
     setSearchParams({ mode: tab });
     setErrorMsg(null);
   };
 
-  // Image preview handler
+  // Image preview handler for file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -61,6 +102,7 @@ export const Analyze: React.FC = () => {
         return;
       }
       setSelectedFile(file);
+      setImageSource('upload');
       setErrorMsg(null);
       const reader = new FileReader();
       reader.onload = () => setFilePreview(reader.result as string);
@@ -68,10 +110,156 @@ export const Analyze: React.FC = () => {
     }
   };
 
+  // Start Camera Stream
+  const startCamera = async (facing: 'environment' | 'user' = 'environment') => {
+    setCameraError(null);
+    setCapturedTempPreview(null);
+    setCapturedTempFile(null);
+    setCameraLoading(true);
+    setIsCameraOpen(true);
+
+    stopCameraStream();
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setCameraLoading(false);
+      setCameraError('Camera API is not supported on this browser. You can still use the Upload Image option or select from your gallery.');
+      return;
+    }
+
+    try {
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: facing },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          },
+          audio: false
+        });
+      } catch {
+        // Fallback to basic video request if ideal constraints fail
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false
+        });
+      }
+
+      streamRef.current = stream;
+      setCameraFacingMode(facing);
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.setAttribute('playsinline', 'true');
+        await videoRef.current.play();
+      }
+      setCameraLoading(false);
+    } catch (err: unknown) {
+      setCameraLoading(false);
+      stopCameraStream();
+      if (err instanceof Error) {
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          setCameraError('Camera access was denied. Please allow camera permission in your browser or address bar settings, or use "Upload Image".');
+        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+          setCameraError('No camera device was detected on your system. Please use the Upload Image option.');
+        } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+          setCameraError('Your camera is currently in use by another application. Please close other camera apps and try again.');
+        } else {
+          setCameraError(`Camera error: ${err.message}. You can still use the Upload Image option.`);
+        }
+      } else {
+        setCameraError('Unable to access camera. Please use the Upload Image option.');
+      }
+    }
+  };
+
+  // Switch between front and rear cameras
+  const handleToggleFacingMode = () => {
+    const nextFacing = cameraFacingMode === 'environment' ? 'user' : 'environment';
+    startCamera(nextFacing);
+  };
+
+  // Close Camera Modal
+  const handleCloseCamera = () => {
+    stopCameraStream();
+    setIsCameraOpen(false);
+    setCapturedTempPreview(null);
+    setCapturedTempFile(null);
+    setCameraError(null);
+  };
+
+  // Capture Photo from Video Stream
+  const handleCapturePhoto = () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const width = video.videoWidth || 1280;
+    const height = video.videoHeight || 720;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.drawImage(video, 0, 0, width, height);
+
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        setCameraError('Failed to capture frame from camera.');
+        return;
+      }
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const photoFile = new File([blob], `trustlens_photo_${timestamp}.jpg`, {
+        type: 'image/jpeg',
+        lastModified: Date.now(),
+      });
+
+      const validation = validateImageFile(photoFile);
+      if (!validation.valid) {
+        setCameraError(validation.error || 'Captured image is invalid.');
+        return;
+      }
+
+      const previewUrl = canvas.toDataURL('image/jpeg', 0.92);
+      setCapturedTempPreview(previewUrl);
+      setCapturedTempFile(photoFile);
+      // Pause video while reviewing captured photo
+      try {
+        video.pause();
+      } catch {}
+    }, 'image/jpeg', 0.92);
+  };
+
+  // Retake inside Camera Modal
+  const handleRetakeCameraPhoto = () => {
+    setCapturedTempPreview(null);
+    setCapturedTempFile(null);
+    if (videoRef.current) {
+      videoRef.current.play().catch(() => {});
+    }
+  };
+
+  // Confirm photo and use it in analysis
+  const handleUseCameraPhoto = () => {
+    if (capturedTempFile && capturedTempPreview) {
+      setSelectedFile(capturedTempFile);
+      setFilePreview(capturedTempPreview);
+      setImageSource('camera');
+      setErrorMsg(null);
+      handleCloseCamera();
+    }
+  };
+
+  // Remove selected image
   const handleRemoveImage = () => {
     setSelectedFile(null);
     setFilePreview(null);
+    setImageSource(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
+    if (mobileCameraInputRef.current) mobileCameraInputRef.current.value = '';
   };
 
   const handleClear = () => {
@@ -119,7 +307,7 @@ export const Analyze: React.FC = () => {
         setResult(res);
       } else if (activeTab === 'screenshot') {
         if (!selectedFile) {
-          setErrorMsg('Please upload a screenshot image (PNG, JPG, or WEBP).');
+          setErrorMsg('Please upload a screenshot image or take a picture (PNG, JPG, or WEBP).');
           return;
         }
         setIsLoading(true);
@@ -136,6 +324,17 @@ export const Analyze: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  // Handle escape key to close camera modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isCameraOpen) {
+        handleCloseCamera();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isCameraOpen]);
 
   // Live client-side hint detection
   const scamHints = scamInput.length > 10 ? detectLocalScamHints(scamInput) : [];
@@ -316,53 +515,157 @@ export const Analyze: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 4: SCREENSHOT ANALYZER */}
+          {/* TAB 4: SCREENSHOT ANALYZER (With Two Input Options: Upload Image & Take Picture) */}
           {activeTab === 'screenshot' && (
             <div className="space-y-4">
               {!filePreview ? (
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-lens-500 dark:hover:border-lens-400 rounded-2xl p-8 sm:p-12 text-center cursor-pointer transition-colors group bg-slate-50/50 dark:bg-slate-900/50"
-                >
-                  <div className="w-14 h-14 rounded-2xl bg-lens-500/10 text-lens-500 flex items-center justify-center mx-auto mb-3 group-hover:scale-105 transition-transform">
-                    <Upload className="w-7 h-7" />
-                  </div>
-                  <h4 className="text-base font-semibold text-slate-800 dark:text-slate-200 mb-1">
-                    Click or drag screenshot here to upload
-                  </h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Supports PNG, JPG, JPEG, or WEBP up to 5MB.
+                <div className="space-y-3">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
+                    Choose how you want to provide your screenshot or document image:
                   </p>
+
+                  {/* Two Options Side-by-Side on Desktop, Stacked on Mobile */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Option 1: Upload Image */}
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="glass-card-hover rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center text-center group cursor-pointer border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-lens-500 dark:hover:border-lens-400 transition-all"
+                      aria-label="Upload Image from your device"
+                    >
+                      <div className="w-14 h-14 rounded-2xl bg-lens-500/10 text-lens-500 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-sm">
+                        <Upload className="w-7 h-7" />
+                      </div>
+                      <h4 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-1">
+                        Upload Image
+                      </h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs leading-relaxed">
+                        Select an existing PNG, JPG, JPEG, or WEBP screenshot from your device.
+                      </p>
+                      <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 group-hover:bg-lens-600 group-hover:text-white transition-colors">
+                        <ImageIcon className="w-3.5 h-3.5" />
+                        <span>Choose File</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 mt-2 font-mono">Max size: 5 MB</span>
+                    </button>
+
+                    {/* Option 2: Take Picture */}
+                    <button
+                      type="button"
+                      onClick={() => startCamera('environment')}
+                      className="glass-card-hover rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center text-center group cursor-pointer border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-sky-500 dark:hover:border-sky-400 transition-all"
+                      aria-label="Take picture using device camera"
+                    >
+                      <div className="w-14 h-14 rounded-2xl bg-sky-500/10 text-sky-500 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-sm">
+                        <Camera className="w-7 h-7" />
+                      </div>
+                      <h4 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-1">
+                        Take Picture
+                      </h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs leading-relaxed">
+                        Use your phone or computer camera to snap a photo of a screen, message, or receipt.
+                      </p>
+                      <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 group-hover:bg-sky-500 group-hover:text-white transition-colors">
+                        <Camera className="w-3.5 h-3.5" />
+                        <span>Open Camera</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 mt-2 font-mono">Rear camera preferred</span>
+                    </button>
+                  </div>
+
+                  {/* Hidden file input for standard file upload */}
                   <input
                     ref={fileInputRef}
                     type="file"
                     accept="image/png,image/jpeg,image/jpg,image/webp"
                     onChange={handleFileChange}
                     className="hidden"
+                    aria-hidden="true"
+                  />
+
+                  {/* Hidden mobile camera fallback input if needed */}
+                  <input
+                    ref={mobileCameraInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    aria-hidden="true"
                   />
                 </div>
               ) : (
-                <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-950/20 p-4">
-                  <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-200/60 dark:border-slate-800">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      <ImageIcon className="w-4 h-4 text-lens-500" />
-                      <span>{selectedFile?.name} ({(selectedFile?.size || 0) / 1024 < 1000 ? `${Math.round((selectedFile?.size || 0) / 1024)} KB` : `${((selectedFile?.size || 0) / (1024 * 1024)).toFixed(1)} MB`})</span>
+                /* Captured / Selected Image Preview State */
+                <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-950/20 p-4 space-y-3">
+                  {/* Image Information & Quick Actions Header */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/60 dark:border-slate-800">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        {imageSource === 'camera' ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
+                            <Camera className="w-3 h-3" />
+                            <span>Camera Photo</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-lens-500/10 text-lens-600 dark:text-lens-400 border border-lens-500/20">
+                            <ImageIcon className="w-3 h-3" />
+                            <span>Uploaded Image</span>
+                          </span>
+                        )}
+                        <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate max-w-xs">
+                          {selectedFile?.name}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 font-mono">
+                        {(selectedFile?.size || 0) / 1024 < 1000 
+                          ? `${Math.round((selectedFile?.size || 0) / 1024)} KB` 
+                          : `${((selectedFile?.size || 0) / (1024 * 1024)).toFixed(2)} MB`} • {selectedFile?.type || 'image/jpeg'}
+                      </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleRemoveImage}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-rose-500 hover:bg-rose-500/10 transition-colors"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                      <span>Remove Image</span>
-                    </button>
+
+                    <div className="flex items-center gap-2">
+                      {/* Retake or Replace Button */}
+                      {imageSource === 'camera' ? (
+                        <button
+                          type="button"
+                          onClick={() => startCamera(cameraFacingMode)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors"
+                          aria-label="Retake camera photo"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          <span>Retake</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors"
+                          aria-label="Replace selected file"
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>Replace</span>
+                        </button>
+                      )}
+
+                      {/* Remove Button */}
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-rose-500 hover:bg-rose-500/10 transition-colors"
+                        aria-label="Remove image"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        <span>Remove</span>
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="flex justify-center max-h-72 overflow-hidden rounded-xl bg-slate-900/40">
+                  {/* Image Display */}
+                  <div className="flex justify-center max-h-80 overflow-hidden rounded-xl bg-slate-900/50 p-2">
                     <img
                       src={filePreview}
-                      alt="Uploaded screenshot preview"
-                      className="max-h-72 object-contain rounded-lg"
+                      alt="Selected screenshot preview for safety analysis"
+                      className="max-h-80 object-contain rounded-lg shadow-sm"
                     />
                   </div>
                 </div>
@@ -387,8 +690,192 @@ export const Analyze: React.FC = () => {
               className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold bg-lens-600 hover:bg-lens-700 text-white transition-all shadow-md shadow-lens-500/20 hover:scale-[1.01]"
             >
               <Send className="w-4 h-4" />
-              <span>Analyze</span>
+              <span>
+                {activeTab === 'screenshot' && selectedFile
+                  ? 'Analyze with TrustLens'
+                  : 'Analyze'}
+              </span>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* CAMERA VIEWFINDER MODAL */}
+      {isCameraOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="camera-modal-title"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fadeIn"
+        >
+          <div className="w-full max-w-lg glass-card rounded-2xl overflow-hidden shadow-2xl border border-slate-700 space-y-0 flex flex-col max-h-[92vh]">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-900/80">
+              <div className="flex items-center gap-2">
+                <Camera className="w-5 h-5 text-sky-400" />
+                <h3 id="camera-modal-title" className="text-base font-bold text-white">
+                  Take Picture
+                </h3>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* Switch Camera Button (Front / Rear) */}
+                {!capturedTempPreview && !cameraLoading && !cameraError && (
+                  <button
+                    type="button"
+                    onClick={handleToggleFacingMode}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                    title={`Switch camera (currently ${cameraFacingMode === 'environment' ? 'rear' : 'front'})`}
+                    aria-label="Switch camera"
+                  >
+                    <FlipHorizontal className="w-4 h-4" />
+                  </button>
+                )}
+
+                {/* Close Button */}
+                <button
+                  type="button"
+                  onClick={handleCloseCamera}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                  aria-label="Cancel and close camera"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Viewfinder / Preview Body */}
+            <div className="relative bg-black flex-1 min-h-[300px] sm:min-h-[360px] flex items-center justify-center overflow-hidden">
+              {cameraLoading && (
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-950/80 text-white space-y-3">
+                  <div className="w-10 h-10 border-4 border-sky-400 border-t-transparent rounded-full animate-spin" />
+                  <p className="text-xs font-medium text-slate-300">
+                    Connecting to camera stream...
+                  </p>
+                </div>
+              )}
+
+              {cameraError ? (
+                <div className="p-6 text-center space-y-4 max-w-md">
+                  <div className="w-12 h-12 rounded-xl bg-rose-500/10 text-rose-400 mx-auto flex items-center justify-center">
+                    <AlertCircle className="w-6 h-6" />
+                  </div>
+                  <h4 className="text-sm font-bold text-white">
+                    Camera Unavailable
+                  </h4>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    {cameraError}
+                  </p>
+                  <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => startCamera(cameraFacingMode)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-sky-600 hover:bg-sky-700 text-white transition-colors"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Retry Camera</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleCloseCamera();
+                        fileInputRef.current?.click();
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Upload File Instead</span>
+                    </button>
+                  </div>
+                </div>
+              ) : capturedTempPreview ? (
+                /* Freeze frame preview after snapping photo */
+                <div className="relative w-full h-full flex items-center justify-center p-2">
+                  <img
+                    src={capturedTempPreview}
+                    alt="Captured camera freeze frame"
+                    className="max-h-[340px] sm:max-h-[380px] w-auto object-contain rounded-lg"
+                  />
+                  <div className="absolute top-4 left-4 px-2.5 py-1 rounded-md bg-black/60 backdrop-blur-sm text-[11px] font-semibold text-emerald-400 flex items-center gap-1 border border-emerald-500/30">
+                    <Check className="w-3 h-3" />
+                    <span>Photo Captured</span>
+                  </div>
+                </div>
+              ) : (
+                /* Active video streaming */
+                <div className="relative w-full h-full flex items-center justify-center">
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-contain max-h-[360px] sm:max-h-[420px]"
+                  />
+                  {/* Subtle viewfinder alignment grid */}
+                  <div className="pointer-events-none absolute inset-6 sm:inset-10 border border-sky-400/30 rounded-2xl flex flex-col justify-between p-2">
+                    <div className="flex justify-between">
+                      <div className="w-4 h-4 border-t-2 border-l-2 border-sky-400" />
+                      <div className="w-4 h-4 border-t-2 border-r-2 border-sky-400" />
+                    </div>
+                    <div className="flex justify-between">
+                      <div className="w-4 h-4 border-b-2 border-l-2 border-sky-400" />
+                      <div className="w-4 h-4 border-b-2 border-r-2 border-sky-400" />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Controls / Footer */}
+            <div className="p-4 bg-slate-900 border-t border-slate-800 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={handleCloseCamera}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+                aria-label="Cancel camera and return"
+              >
+                Cancel
+              </button>
+
+              {!cameraError && (
+                <div className="flex items-center gap-2">
+                  {capturedTempPreview ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleRetakeCameraPhoto}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors"
+                        aria-label="Retake picture"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>Retake</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleUseCameraPhoto}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-sky-500 hover:bg-sky-600 text-white transition-colors shadow-sm"
+                        aria-label="Confirm and use this photo for analysis"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Use This Photo</span>
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={cameraLoading}
+                      onClick={handleCapturePhoto}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-sky-500 hover:bg-sky-600 active:scale-95 text-white transition-all shadow-md shadow-sky-500/20 disabled:opacity-50"
+                      aria-label="Capture photo now"
+                    >
+                      <Camera className="w-4 h-4" />
+                      <span>Capture Photo</span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
