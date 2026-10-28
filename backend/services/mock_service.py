@@ -5,23 +5,31 @@ from models.schemas import AnalysisResult, SignalItem
 
 def calculate_score_from_signals(signals: List[Dict[str, Any]], base_type: str) -> int:
     """
-    Computes a calibrated TrustLens score based on detected local signals.
-    Severity weights: high = 30, medium = 18, low = 8.
+    Computes a calibrated TrustLens concern score based on detected local signals.
+    High scores (70-100) = High Concern / Fraud / Misinformation.
+    Low scores (0-30) = Low Concern / Standard communication.
     """
     if not signals:
         return 12  # Low baseline concern when zero suspicious signals detected
 
-    weights = {"high": 30, "medium": 18, "low": 8}
+    weights = {"high": 35, "medium": 20, "low": 10}
     total = sum(weights.get(s.get("severity", "low"), 10) for s in signals)
     
     # Base adjustments depending on category
     if base_type == "scam":
-        # High severity scam signals (OTP/password/payment) push quickly into high risk
         score = 25 + total
     elif base_type == "url":
         score = 20 + total
     else: # news / claim
-        score = 15 + total
+        # If there are any high severity signals (medical hoax, unverified death rumor), elevate baseline
+        has_high = any(s.get("severity") == "high" for s in signals)
+        has_medium = any(s.get("severity") == "medium" for s in signals)
+        if has_high:
+            score = 45 + total
+        elif has_medium:
+            score = 30 + total
+        else:
+            score = 20 + total
 
     return max(5, min(95, score))
 
@@ -35,15 +43,22 @@ def get_risk_level(score: int) -> str:
     else:
         return "HIGH RISK INDICATORS"
 
-def get_verdict(score: int, analysis_type: str) -> str:
+def get_verdict(score: int, analysis_type: str, signals: List[Dict[str, Any]]) -> str:
+    # Check for specific high-priority signals
+    signal_names = [s.get("name", "").lower() for s in signals]
+    if any("death" in n for n in signal_names):
+        return "Uncorroborated Death Rumor"
+    if any("medical" in n or "cure" in n for n in signal_names):
+        return "Unsubstantiated Medical Claim"
+
     if score <= 30:
-        return "Standard communication patterns" if analysis_type != "news" else "Factual formatting indicators"
+        return "Standard communication patterns" if analysis_type != "news" else "Low concern format"
     elif score <= 60:
-        return "Potential ambiguities requiring verification"
+        return "Unverified claim needing independent confirmation"
     elif score <= 80:
-        return "Multiple warning signals detected"
+        return "Multiple warning signals / Suspicious framing"
     else:
-        return "Prominent high-risk indicators observed"
+        return "Prominent threat indicators" if analysis_type != "news" else "Deceptive or debunked claim"
 
 def generate_mock_analysis(
     content: str,
@@ -52,12 +67,12 @@ def generate_mock_analysis(
     is_fallback: bool = False
 ) -> AnalysisResult:
     """
-    Generates a realistic, explainable mock / pattern-based analysis.
-    Explicitly flags is_mock=True.
+    Generates a calibrated pattern-based analysis when AI is offline or quota-limited.
+    Explicitly flags is_mock=True and local_signals_only=is_fallback.
     """
     score = calculate_score_from_signals(signals, analysis_type)
     risk_level = get_risk_level(score)
-    verdict = get_verdict(score, analysis_type)
+    verdict = get_verdict(score, analysis_type, signals)
 
     # Format signal items
     signal_items = [
@@ -73,43 +88,40 @@ def generate_mock_analysis(
     if not signal_items:
         signal_items.append(
             SignalItem(
-                name="No Common Anomaly Patterns",
+                name="No Known Threat Signatures",
                 severity="low",
-                reason="Did not match standard database signatures for urgency, payment coercion, or deceptive structures."
+                reason="Did not match known pattern signatures for urgency coercion, scam patterns, or sensational phrasing."
             )
         )
 
-    # Contextual summary & recommendation (concise, <= 40 words & <= 30 words)
+    # Contextual summary & recommendation
     if risk_level == "HIGH RISK INDICATORS":
         summary = (
-            "Content exhibits multiple severe risk signals, including direct requests for funds, "
-            "authentication codes, or artificial urgency coercion."
+            "Content exhibits critical risk signals or uncorroborated high-impact rumors lacking any verifiable source citation."
         )
         recommendation = (
-            "Do not transfer money, share OTPs, or click links. Verify directly through official contact channels."
+            "Do not share or act on this claim. Cross-reference official announcements and verified news agencies before trusting."
         )
     elif risk_level == "SUSPICIOUS":
         summary = (
-            "Several warning patterns were identified that match deceptive messaging, unverified redirects, "
-            "or sensationalized claims."
+            "Several warning patterns detected, including unverified claims, missing attribution, or sensational framing."
         )
         recommendation = (
-            "Avoid interacting with unverified links or attachments. Cross-check claims with reputable primary sources."
+            "Treat this claim with skepticism. Independently verify the event on established national and international news outlets."
         )
     elif risk_level == "NEEDS VERIFICATION":
         summary = (
-            "While not definitively dangerous, this content features ambiguities, missing attribution, "
-            "or atypical domain structures."
+            "This content makes claims without providing direct verifiable references, primary citations, or timestamps."
         )
         recommendation = (
-            "Exercise reasonable caution. Independently confirm information before acting on or forwarding this content."
+            "Exercise caution. Independently confirm information before forwarding or accepting as factual."
         )
     else:
         summary = (
-            "No aggressive threat signatures detected. Content conforms to standard expected digital communication patterns."
+            "No aggressive threat signatures detected. Content conforms to expected baseline communication patterns."
         )
         recommendation = (
-            "Remains standard safe practice to maintain normal digital hygiene and verify unexpected requests."
+            "Standard safe practice: maintain healthy digital hygiene and independently verify unexpected claims."
         )
 
     return AnalysisResult(
